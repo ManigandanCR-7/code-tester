@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Nova-Code tester | Next-Gen Code Inspector</title>
+  <title>Nova-Code Tester | Next-Gen Code Inspector</title>
   <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
@@ -12,8 +12,10 @@
       --border-color: #30363d;
       --accent-blue: #58a6ff;
       --accent-purple: #bc8cff;
+      --accent-orange: #d29922;
       --error-red: #f85149;
-      --error-bg: rgba(248, 81, 73, 0.15);
+      --error-bg: rgba(248, 81, 73, 0.12);
+      --warning-bg: rgba(210, 153, 34, 0.12);
       --success-green: #3fb950;
       --text-main: #c9d1d9;
       --text-muted: #8b949e;
@@ -69,12 +71,12 @@
     }
 
     .container {
-      max-width: 1350px;
+      max-width: 1400px;
       width: 100%;
       margin: 2rem auto;
       padding: 0 1.5rem;
       display: grid;
-      grid-template-columns: 1fr 400px;
+      grid-template-columns: 1fr 440px;
       gap: 1.5rem;
       flex-grow: 1;
     }
@@ -115,7 +117,7 @@
       line-height: 1.6;
       background: #0d1117;
       overflow: hidden;
-      min-height: 520px;
+      min-height: 540px;
     }
 
     .line-numbers {
@@ -131,7 +133,7 @@
 
     .line-number {
       padding-right: 12px;
-      height: 22.4px; /* Matches exact editor line-height */
+      height: 22.4px;
       transition: color 0.2s, background 0.2s;
     }
 
@@ -163,6 +165,7 @@
       white-space: pre;
       overflow-y: scroll;
       overflow-x: auto;
+      tab-size: 4;
     }
 
     .action-panel {
@@ -200,7 +203,7 @@
       padding: 1.25rem;
       flex-grow: 1;
       overflow-y: auto;
-      max-height: 560px;
+      max-height: 580px;
     }
 
     .status-badge {
@@ -231,31 +234,109 @@
       border: 1px solid var(--border-color);
       border-left: 3px solid var(--error-red);
       border-radius: 6px;
-      padding: 0.85rem;
-      margin-bottom: 0.75rem;
+      padding: 1rem;
+      margin-bottom: 0.85rem;
       font-family: 'Fira Code', monospace;
       font-size: 0.82rem;
     }
 
-    .issue-tag {
-      color: var(--error-red);
+    .issue-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 0.75rem;
+    }
+
+    .line-badge {
+      background: #21262d;
+      color: var(--accent-blue);
+      padding: 0.2rem 0.5rem;
+      border-radius: 4px;
       font-weight: 600;
+      font-size: 0.75rem;
+      border: 1px solid var(--border-color);
+    }
+
+    .sub-issue {
+      margin-bottom: 0.75rem;
+      padding: 0.6rem;
+      border-radius: 6px;
+      background: #161b22;
+    }
+
+    .sub-issue.indent-issue {
+      border-left: 3px solid var(--accent-orange);
+    }
+
+    .sub-issue.char-issue {
+      border-left: 3px solid var(--accent-purple);
+    }
+
+    .badge {
+      display: inline-block;
+      font-size: 0.7rem;
+      font-weight: 700;
       text-transform: uppercase;
+      padding: 0.15rem 0.4rem;
+      border-radius: 3px;
+      margin-bottom: 0.4rem;
+    }
+
+    .badge-indent {
+      background: var(--warning-bg);
+      color: var(--accent-orange);
+    }
+
+    .badge-char {
+      background: rgba(188, 140, 255, 0.15);
+      color: var(--accent-purple);
+    }
+
+    .issue-desc {
+      color: var(--text-main);
+      font-size: 0.8rem;
+    }
+
+    .char-list {
+      list-style: none;
+      padding-left: 0;
+    }
+
+    .char-list li {
+      position: relative;
+      padding-left: 1rem;
+      margin-top: 0.3rem;
+      color: #e6edf3;
       font-size: 0.78rem;
-      margin-bottom: 0.5rem;
+    }
+
+    .char-list li::before {
+      content: "›";
+      position: absolute;
+      left: 0;
+      color: var(--accent-purple);
+      font-weight: bold;
+    }
+
+    .diff-label {
+      color: var(--text-muted);
+      font-size: 0.75rem;
+      margin-top: 0.5rem;
+      display: block;
     }
 
     .code-diff {
       background: #161b22;
       padding: 0.4rem 0.6rem;
       border-radius: 4px;
-      margin-top: 0.3rem;
+      margin-top: 0.2rem;
       word-break: break-all;
       white-space: pre-wrap;
+      font-size: 0.8rem;
     }
 
-    .diff-expected { color: var(--success-green); }
-    .diff-found { color: var(--error-red); }
+    .diff-expected { color: var(--success-green); border: 1px solid rgba(63, 185, 80, 0.2); }
+    .diff-found { color: var(--error-red); border: 1px solid rgba(248, 81, 73, 0.2); }
 
     @media (max-width: 900px) {
       .container { grid-template-columns: 1fr; }
@@ -303,6 +384,7 @@
     const lineNumbers = document.getElementById('lineNumbers');
     const resultsContainer = document.getElementById('resultsContainer');
 
+    // Update line numbers gutter
     function updateLineNumbers(errorLines = []) {
       const lines = editor.value.split('\n');
       const lineCount = Math.max(lines.length, 1);
@@ -314,6 +396,18 @@
       }
       lineNumbers.innerHTML = numbersHtml;
     }
+
+    // Enable Tab key indent in textarea
+    editor.addEventListener('keydown', (e) => {
+      if (e.key === 'Tab') {
+        e.preventDefault();
+        const start = editor.selectionStart;
+        const end = editor.selectionEnd;
+        editor.value = editor.value.substring(0, start) + "    " + editor.value.substring(end);
+        editor.selectionStart = editor.selectionEnd = start + 4;
+        updateLineNumbers();
+      }
+    });
 
     editor.addEventListener('input', () => updateLineNumbers());
     editor.addEventListener('scroll', () => {
@@ -346,30 +440,74 @@
 
           let html = `
             <div class="status-badge status-fail">
-              ⚠️ ${data.errors.length} Issue(s) Detected
+              ⚠️ ${data.errors.length} Line Issue(s) Detected
             </div>
           `;
 
           data.errors.forEach((err, idx) => {
-            const lineText = err.line_no ? `(LINE ${err.line_no})` : '';
+            const lineBadgeText = err.line_no ? `LINE ${err.line_no}` : 'GENERAL';
 
+            html += `<div class="issue-item">`;
             html += `
-              <div class="issue-item">
-                <div class="issue-tag">ISSUE #${idx + 1} ${lineText} - ${err.type.toUpperCase()}</div>
-                ${err.expected ? `<div><span style="color: var(--text-muted)">Expected:</span> <div class="code-diff diff-expected">${escapeHtml(err.expected)}</div></div>` : ''}
-                ${err.found ? `<div><span style="color: var(--text-muted)">Found:</span> <div class="code-diff diff-found">${escapeHtml(err.found)}</div></div>` : ''}
+              <div class="issue-header">
+                <span style="color: var(--error-red); font-weight: 700;">ISSUE #${idx + 1}</span>
+                <span class="line-badge">${lineBadgeText}</span>
               </div>
             `;
+
+            // Case 1: Line structure issue (missing_line / extra_line / empty)
+            if (err.type) {
+              html += `<div class="issue-desc" style="margin-bottom:0.5rem; color: var(--error-red);">${escapeHtml(err.message)}</div>`;
+              if (err.expected) {
+                html += `<span class="diff-label">Expected:</span><div class="code-diff diff-expected">${escapeHtml(err.expected)}</div>`;
+              }
+              if (err.found) {
+                html += `<span class="diff-label">Found:</span><div class="code-diff diff-found">${escapeHtml(err.found)}</div>`;
+              }
+            } else {
+              // Case 2: Indentation Mismatch
+              if (err.indentation) {
+                html += `
+                  <div class="sub-issue indent-issue">
+                    <span class="badge badge-indent">Indentation Error</span>
+                    <p class="issue-desc">${escapeHtml(err.indentation.message)}</p>
+                  </div>
+                `;
+              }
+
+              // Case 3: Character Level Mismatch
+              if (err.character_mismatches && err.character_mismatches.length > 0) {
+                html += `
+                  <div class="sub-issue char-issue">
+                    <span class="badge badge-char">Character Mismatch</span>
+                    <ul class="char-list">
+                      ${err.character_mismatches.map(msg => `<li>${escapeHtml(msg)}</li>`).join('')}
+                    </ul>
+                  </div>
+                `;
+              }
+
+              // Display Expected vs Found lines
+              if (err.expected_line !== undefined) {
+                html += `<span class="diff-label">Expected Line:</span><div class="code-diff diff-expected">${escapeHtml(err.expected_line)}</div>`;
+              }
+              if (err.found_line !== undefined) {
+                html += `<span class="diff-label">Submitted Line:</span><div class="code-diff diff-found">${escapeHtml(err.found_line)}</div>`;
+              }
+            }
+
+            html += `</div>`;
           });
 
           resultsContainer.innerHTML = html;
         }
       } catch (err) {
-        resultsContainer.innerHTML = `<p style="color: var(--error-red);">Failed to communicate with Nova Debug backend.</p>`;
+        resultsContainer.innerHTML = `<p style="color: var(--error-red); text-align: center;">Failed to communicate with Nova Debug backend.</p>`;
       }
     }
 
     function escapeHtml(str) {
+      if (!str) return '';
       return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
     }
 
