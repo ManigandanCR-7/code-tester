@@ -30,7 +30,7 @@ def ai_agent_router():
     d = request.get_json(silent=True)
     if not d or ("command" not in d and "text_command" not in d):
         abort(400)
-    
+
     cmd_raw = d.get("command") or d.get("text_command")
     cmd = cmd_raw.strip().lower()
 
@@ -40,8 +40,6 @@ def ai_agent_router():
             "open youtube and search",
             "open youtube and play",
             "open youtube",
-            "search for",
-            "search",
             "and play",
             "play",
             "on youtube"
@@ -53,10 +51,6 @@ def ai_agent_router():
         if vid:
             target = f"https://www.youtube.com/embed/{vid}?autoplay=1&mute=1"
             msg = f"Playing {q}"
-        else:
-            enc = urllib.parse.quote_plus(q)
-            target = f"https://www.youtube.com/results?search_query={enc}"
-            msg = f"Searching YouTube for {q}"
 
     elif any(k in cmd for k in ["gmail", "email", "mail", "message"]):
         to, body = "", ""
@@ -65,36 +59,26 @@ def ai_agent_router():
             '',
             cmd
         ).strip()
-        
+
         clean_cmd = re.sub(r'\b(com(and|mand)?)\b', 'com', clean_cmd)
-        
+
         parts = re.split(r'\b(type|write|saying|message|content|with body)\b', clean_cmd)
         recip_part = parts[0].strip()
-        
+
         recip_part = re.sub(r'^(update\s+to|to|send\s+to|and\s+update\s+to)\s*', '', recip_part).strip()
-        
+
         if len(parts) > 1:
             body = parts[-1].strip()
-            
+
         if recip_part:
             c = recip_part.replace(" at ", "@").replace(" dot ", ".").replace(" ", "")
             c = re.sub(r'[^a-zA-Z0-9@._%-]', '', c)
             to = c if "@" in c else f"{c}@gmail.com"
-        else:
-            to = "sharanbalaji2025@gmail.com"
-            
-        if not body:
-            body = "how was your day"
-            
+
         base = "https://mail.google.com/mail/u/0/?view=cm&fs=1"
         params = urllib.parse.urlencode({"to": to, "body": body})
         target = f"{base}&{params}"
         msg = f"Drafting email to {to}"
-
-    else:
-        enc = urllib.parse.quote_plus(cmd)
-        target = f"https://www.google.com/search?q={enc}"
-        msg = f"Searching Google for {cmd}"
 
     return jsonify({
         "success": True,
