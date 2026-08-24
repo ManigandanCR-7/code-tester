@@ -1,5 +1,5 @@
 import os
-import re
+import ast
 import difflib
 from flask import Flask, render_template, request, jsonify
 
@@ -90,29 +90,76 @@ def ai_agent_router():
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))'''
 
-
-def normalize_code_line(line: str) -> str:
-    """Strips internal whitespace so x=1 and x = 1 are equal."""
-    return re.sub(r'\s+', '', line.strip())
+BLOCK_KEYWORDS = {"def", "if", "elif", "else", "for", "while", "try", "except", "finally", "with", "class"}
 
 
-def generate_rectification_instructions(expected_str: str, found_str: str):
-    """Generates detailed, human-friendly steps to fix character/keyword/symbol errors."""
-    instructions = []
-    matcher = difflib.SequenceMatcher(None, expected_str, found_str)
-    
+def get_char_diffs(expected: str, found: str):
+    """Finds exact character position differences between expected and found strings."""
+    diffs = []
+    matcher = difflib.SequenceMatcher(None, expected, found)
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        exp_sub = expected_str[i1:i2]
-        found_sub = found_str[j1:j2]
-        
         if tag == 'replace':
-            instructions.append(f"Change '{found_sub}' to '{exp_sub}'")
+            diffs.append(f"Expected '{expected[i1:i2]}', found '{found[j1:j2]}' near index {j1}")
         elif tag == 'delete':
-            instructions.append(f"Add missing character(s)/keyword: '{exp_sub}'")
+            diffs.append(f"Missing character(s) '{expected[i1:i2]}' near index {j1}")
         elif tag == 'insert':
-            instructions.append(f"Remove extra character(s): '{found_sub}'")
-            
-    return instructions
+            diffs.append(f"Extra character(s) '{found[j1:j2]}' at index {j1}")
+    return diffs
+
+
+def check_keyword_indentation_rules(code_string: str, user_line_count: int):
+    """
+    Checks block-keyword indentation rules dynamically up to the line count 
+    currently typed in by the user.
+    """
+    errors = []
+    lines = code_string.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
+
+    # 1. Parse AST dynamically (ignore EOF errors for partial snippet typing)
+    try:
+        ast.parse(code_string)
+    except IndentationError as e:
+        if e.lineno and e.lineno <= user_line_count:
+            return [{
+                "line_no": e.lineno,
+                "type": "IndentationError",
+                "message": f"Indentation Error on line {e.lineno}: {e.msg}"
+            }]
+    except SyntaxError as e:
+        # Ignore unexpected EOF when the user is mid-typing an incomplete snippet
+        if "unexpected EOF" not in e.msg and e.lineno and e.lineno <= user_line_count:
+            return [{
+                "line_no": e.lineno,
+                "type": "SyntaxError",
+                "message": f"Syntax Error on line {e.lineno}: {e.msg}"
+            }]
+
+    # 2. Check line-by-line block keyword expectations within typed bounds
+    for i in range(min(len(lines), user_line_count)):
+        line_text = lines[i]
+        stripped = line_text.strip()
+        words = stripped.split()
+
+        if words and words[0] in BLOCK_KEYWORDS:
+            keyword = words[0]
+            # Check if this keyword statement ends with a colon
+            if stripped.endswith(":"):
+                # If there's a subsequent line typed by the user, verify its indentation
+                if i + 1 < len(lines) and i + 1 < user_line_count:
+                    next_line = lines[i + 1]
+                    if next_line.strip() and not next_line.strip().startswith("#"):
+                        current_indent = len(line_text) - len(line_text.lstrip(' '))
+                        next_indent = len(next_line) - len(next_line.lstrip(' '))
+
+                        if next_indent <= current_indent:
+                            errors.append({
+                                "line_no": i + 2,
+                                "keyword": keyword,
+                                "type": "KeywordIndentationMismatch",
+                                "message": f"Expected an indented block after '{keyword}' on line {i + 1}."
+                            })
+
+    return errors
 
 
 def analyze_differences(registered: str, submitted: str):
@@ -120,64 +167,70 @@ def analyze_differences(registered: str, submitted: str):
     sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
 
     if not any(sub_lines):
-        return {
-            "match": False, 
-            "errors": [{
-                "type": "empty", 
-                "message": "Submitted code is empty.",
-                "fix_instruction": "Please enter your Python code into the editor."
-            }]
-        }
+        return {"match": False, "errors": [{"type": "empty", "message": "Submitted code is empty."}]}
 
     user_line_count = len(sub_lines)
+
+    # Step 1: Check Python keyword & syntax rules ONLY up to typed line count
+    keyword_errors = check_keyword_indentation_rules(submitted, user_line_count)
+    if keyword_errors:
+        return {"match": False, "typed_lines": user_line_count, "errors": keyword_errors}
+
+    # Step 2: Full line-by-line comparison (indentation + letters + symbols + keywords) up to user_line_count
     errors = []
     lines_to_check = min(len(reg_lines), user_line_count)
 
     for line_idx in range(1, lines_to_check + 1):
-        reg_line = reg_lines[line_idx - 1]
+        expected_line = reg_lines[line_idx - 1]
         sub_line = sub_lines[line_idx - 1]
+
+        if expected_line == sub_line:
+            continue
+
+        # Check Leading Indentation Mismatches
+        expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
+        found_indent = len(sub_line) - len(sub_line.lstrip(' '))
 
         line_error = {
             "line_no": line_idx,
-            "expected_line": reg_line,
-            "found_line": sub_line,
-            "issues": [],
-            "rectifications": []
+            "indentation": None,
+            "character_mismatches": [],
+            "expected_line": expected_line,
+            "found_line": sub_line
         }
-
-        # 1. Indentation Check
-        expected_indent = len(reg_line) - len(reg_line.lstrip(' '))
-        found_indent = len(sub_line) - len(sub_line.lstrip(' '))
 
         if expected_indent != found_indent:
             diff_spaces = expected_indent - found_indent
             if diff_spaces > 0:
-                line_error["issues"].append(
-                    f"Indentation Error: Needs {diff_spaces} more leading space(s) (Expected {expected_indent}, found {found_indent})."
-                )
-                line_error["rectifications"].append(
-                    f"Add {diff_spaces} leading space(s) at the beginning of line {line_idx}."
-                )
+                indent_msg = f"Needs {diff_spaces} more leading space(s) (Expected {expected_indent}, found {found_indent})."
             else:
-                line_error["issues"].append(
-                    f"Indentation Error: Has {abs(diff_spaces)} extra leading space(s) (Expected {expected_indent}, found {found_indent})."
-                )
-                line_error["rectifications"].append(
-                    f"Remove {abs(diff_spaces)} leading space(s) from the start of line {line_idx}."
-                )
+                indent_msg = f"Has {abs(diff_spaces)} extra leading space(s) (Expected {expected_indent}, found {found_indent})."
 
-        # 2. Character & Keyword Check (Ignoring internal spaces)
-        norm_expected = normalize_code_line(reg_line)
-        norm_found = normalize_code_line(sub_line)
+            line_error["indentation"] = {
+                "expected_spaces": expected_indent,
+                "found_spaces": found_indent,
+                "message": indent_msg
+            }
 
-        if norm_expected != norm_found:
-            line_error["issues"].append("Character/Keyword/Syntax mismatch found in code.")
-            char_fixes = generate_rectification_instructions(norm_expected, norm_found)
-            line_error["rectifications"].extend(char_fixes)
+        # Check Character, Symbol, Keyword & Letter Mismatches
+        expected_content = expected_line.strip()
+        found_content = sub_line.strip()
 
-        # Append to output list if any issues were recorded
-        if line_error["issues"]:
+        if expected_content != found_content:
+            line_error["character_mismatches"] = get_char_diffs(expected_content, found_content)
+
+        if line_error["indentation"] or line_error["character_mismatches"]:
             errors.append(line_error)
+
+    # Handle extra lines if user typed beyond registered line length
+    if user_line_count > len(reg_lines):
+        for extra_idx in range(len(reg_lines) + 1, user_line_count + 1):
+            errors.append({
+                "line_no": extra_idx,
+                "type": "extra_line",
+                "message": f"Line {extra_idx} is an extra line not present in registered code.",
+                "found": sub_lines[extra_idx - 1]
+            })
 
     return {
         "match": len(errors) == 0,
