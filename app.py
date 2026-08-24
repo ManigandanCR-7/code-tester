@@ -1,4 +1,5 @@
 import os
+import re
 import difflib
 from flask import Flask, render_template, request, jsonify
 
@@ -104,6 +105,11 @@ def get_char_diffs(expected: str, found: str):
     return diffs
 
 
+def normalize_internal_whitespace(text: str) -> str:
+    """Collapses multiple spaces/tabs into a single space, ignoring extra inner spacing."""
+    return re.sub(r'[ \t]+', ' ', text).strip()
+
+
 def analyze_differences(registered: str, submitted: str):
     reg_lines = registered.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
     sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
@@ -129,12 +135,17 @@ def analyze_differences(registered: str, submitted: str):
         expected_line = reg_lines[line_idx - 1]
         sub_line = sub_lines[line_idx - 1]
 
-        if expected_line == sub_line:
-            continue
-
-        # Calculate exact leading indentation spaces
+        # Calculate exact leading indentation spaces before normalization
         expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
         found_indent = len(sub_line) - len(sub_line.lstrip(' '))
+
+        # Normalize inner spacing (e.g. "x  =  10" -> "x = 10")
+        expected_content = normalize_internal_whitespace(expected_line)
+        found_content = normalize_internal_whitespace(sub_line)
+
+        # Skip if both indentation and normalized content match
+        if expected_indent == found_indent and expected_content == found_content:
+            continue
 
         line_error = {
             "line_no": line_idx,
@@ -158,10 +169,7 @@ def analyze_differences(registered: str, submitted: str):
                 "message": indent_msg
             }
 
-        # 2. Character Mismatch Check (stripping leading/trailing spaces)
-        expected_content = expected_line.strip()
-        found_content = sub_line.strip()
-
+        # 2. Character Mismatch Check (on normalized content, ignoring extra internal spaces)
         if expected_content != found_content:
             line_error["character_mismatches"] = get_char_diffs(expected_content, found_content)
 
