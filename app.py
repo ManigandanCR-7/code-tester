@@ -99,15 +99,15 @@ def get_char_diffs(expected: str, found: str):
         if tag == 'replace':
             diffs.append(f"Expected '{expected[i1:i2]}', found '{found[j1:j2]}' at character index {j1}")
         elif tag == 'delete':
-            diffs.append(f"Missing letter(s) '{expected[i1:i2]}' near index {j1}")
+            diffs.append(f"Missing character(s) '{expected[i1:i2]}' near index {j1}")
         elif tag == 'insert':
-            diffs.append(f"Extra letter(s) '{found[j1:j2]}' at index {j1}")
+            diffs.append(f"Extra character(s) '{found[j1:j2]}' at index {j1}")
     return diffs
 
 
-def normalize_internal_whitespace(text: str) -> str:
-    """Collapses multiple spaces/tabs into a single space, ignoring extra inner spacing."""
-    return re.sub(r'[ \t]+', ' ', text).strip()
+def strip_all_whitespace(text: str) -> str:
+    """Removes all space and tab characters to ignore inner spacing completely."""
+    return re.sub(r'[ \t]+', '', text)
 
 
 def analyze_differences(registered: str, submitted: str):
@@ -135,15 +135,15 @@ def analyze_differences(registered: str, submitted: str):
         expected_line = reg_lines[line_idx - 1]
         sub_line = sub_lines[line_idx - 1]
 
-        # Calculate exact leading indentation spaces before normalization
+        # Calculate exact leading indentation spaces before stripping content
         expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
         found_indent = len(sub_line) - len(sub_line.lstrip(' '))
 
-        # Normalize inner spacing (e.g. "x  =  10" -> "x = 10")
-        expected_content = normalize_internal_whitespace(expected_line)
-        found_content = normalize_internal_whitespace(sub_line)
+        # Strip all inner spaces so spacing around commas/operators is ignored
+        expected_content = strip_all_whitespace(expected_line)
+        found_content = strip_all_whitespace(sub_line)
 
-        # Skip if both indentation and normalized content match
+        # Skip if indentation matches and non-whitespace characters match perfectly
         if expected_indent == found_indent and expected_content == found_content:
             continue
 
@@ -169,7 +169,7 @@ def analyze_differences(registered: str, submitted: str):
                 "message": indent_msg
             }
 
-        # 2. Character Mismatch Check (on normalized content, ignoring extra internal spaces)
+        # 2. Character Mismatch Check (calculated on content with zero inner spaces)
         if expected_content != found_content:
             line_error["character_mismatches"] = get_char_diffs(expected_content, found_content)
 
