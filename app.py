@@ -1,5 +1,4 @@
 import os
-import ast
 import re
 import difflib
 from flask import Flask, render_template, request, jsonify
@@ -93,22 +92,27 @@ if __name__ == "__main__":
 
 
 def normalize_code_line(line: str) -> str:
-    """Removes all internal whitespace while preserving all characters, symbols, and keywords."""
+    """Strips internal whitespace so x=1 and x = 1 are equal."""
     return re.sub(r'\s+', '', line.strip())
 
 
-def get_character_diffs(expected_str: str, found_str: str):
-    """Finds exact character mismatches ignoring inline whitespace."""
-    diffs = []
+def generate_rectification_instructions(expected_str: str, found_str: str):
+    """Generates detailed, human-friendly steps to fix character/keyword/symbol errors."""
+    instructions = []
     matcher = difflib.SequenceMatcher(None, expected_str, found_str)
+    
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
+        exp_sub = expected_str[i1:i2]
+        found_sub = found_str[j1:j2]
+        
         if tag == 'replace':
-            diffs.append(f"Expected '{expected_str[i1:i2]}', found '{found_str[j1:j2]}'")
+            instructions.append(f"Change '{found_sub}' to '{exp_sub}'")
         elif tag == 'delete':
-            diffs.append(f"Missing character(s): '{expected_str[i1:i2]}'")
+            instructions.append(f"Add missing character(s)/keyword: '{exp_sub}'")
         elif tag == 'insert':
-            diffs.append(f"Extra character(s): '{found_str[j1:j2]}'")
-    return diffs
+            instructions.append(f"Remove extra character(s): '{found_sub}'")
+            
+    return instructions
 
 
 def analyze_differences(registered: str, submitted: str):
@@ -116,7 +120,14 @@ def analyze_differences(registered: str, submitted: str):
     sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
 
     if not any(sub_lines):
-        return {"match": False, "errors": [{"type": "empty", "message": "Submitted code is empty."}]}
+        return {
+            "match": False, 
+            "errors": [{
+                "type": "empty", 
+                "message": "Submitted code is empty.",
+                "fix_instruction": "Please enter your Python code into the editor."
+            }]
+        }
 
     user_line_count = len(sub_lines)
     errors = []
@@ -126,41 +137,47 @@ def analyze_differences(registered: str, submitted: str):
         reg_line = reg_lines[line_idx - 1]
         sub_line = sub_lines[line_idx - 1]
 
-        # 1. Indentation Check (Leading spaces)
+        line_error = {
+            "line_no": line_idx,
+            "expected_line": reg_line,
+            "found_line": sub_line,
+            "issues": [],
+            "rectifications": []
+        }
+
+        # 1. Indentation Check
         expected_indent = len(reg_line) - len(reg_line.lstrip(' '))
         found_indent = len(sub_line) - len(sub_line.lstrip(' '))
 
-        indent_error = None
         if expected_indent != found_indent:
             diff_spaces = expected_indent - found_indent
             if diff_spaces > 0:
-                indent_msg = f"Line {line_idx}: Needs {diff_spaces} more leading space(s) (Expected {expected_indent}, found {found_indent})."
+                line_error["issues"].append(
+                    f"Indentation Error: Needs {diff_spaces} more leading space(s) (Expected {expected_indent}, found {found_indent})."
+                )
+                line_error["rectifications"].append(
+                    f"Add {diff_spaces} leading space(s) at the beginning of line {line_idx}."
+                )
             else:
-                indent_msg = f"Line {line_idx}: Has {abs(diff_spaces)} extra leading space(s) (Expected {expected_indent}, found {found_indent})."
+                line_error["issues"].append(
+                    f"Indentation Error: Has {abs(diff_spaces)} extra leading space(s) (Expected {expected_indent}, found {found_indent})."
+                )
+                line_error["rectifications"].append(
+                    f"Remove {abs(diff_spaces)} leading space(s) from the start of line {line_idx}."
+                )
 
-            indent_error = {
-                "expected_spaces": expected_indent,
-                "found_spaces": found_indent,
-                "message": indent_msg
-            }
-
-        # 2. Character & Keyword Check (Normalized without internal whitespace)
+        # 2. Character & Keyword Check (Ignoring internal spaces)
         norm_expected = normalize_code_line(reg_line)
         norm_found = normalize_code_line(sub_line)
 
-        char_diffs = []
         if norm_expected != norm_found:
-            char_diffs = get_character_diffs(norm_expected, norm_found)
+            line_error["issues"].append("Character/Keyword/Syntax mismatch found in code.")
+            char_fixes = generate_rectification_instructions(norm_expected, norm_found)
+            line_error["rectifications"].extend(char_fixes)
 
-        # Flag line errors if either Indentation or Character mismatch occurs
-        if indent_error or char_diffs:
-            errors.append({
-                "line_no": line_idx,
-                "indentation_error": indent_error,
-                "character_mismatches": char_diffs,
-                "expected_line": reg_line,
-                "found_line": sub_line
-            })
+        # Append to output list if any issues were recorded
+        if line_error["issues"]:
+            errors.append(line_error)
 
     return {
         "match": len(errors) == 0,
