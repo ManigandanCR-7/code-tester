@@ -1,46 +1,80 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
+
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <meta name="viewport"
+        content="width=device-width, initial-scale=1.0">
+
   <title>Nova-Code Tester | Next-Gen Code Inspector</title>
-  <link href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;600;700&display=swap" rel="stylesheet">
+
+  <link
+    href="https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;600&family=Inter:wght@300;400;600;700&display=swap"
+    rel="stylesheet"
+  >
+
   <style>
+
     :root {
       --bg-dark: #0d1117;
       --panel-bg: #161b22;
       --border-color: #30363d;
+
       --accent-blue: #58a6ff;
       --accent-purple: #bc8cff;
       --accent-orange: #d29922;
+
       --error-red: #f85149;
       --error-bg: rgba(248, 81, 73, 0.12);
+
       --warning-bg: rgba(210, 153, 34, 0.12);
+
       --success-green: #3fb950;
+
       --text-main: #c9d1d9;
       --text-muted: #8b949e;
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+
     body {
       font-family: 'Inter', sans-serif;
       background-color: var(--bg-dark);
       color: var(--text-main);
+
       min-height: 100vh;
+
       display: flex;
       flex-direction: column;
     }
 
+
+    /* ========================================================
+       HEADER
+       ======================================================== */
+
     header {
       padding: 1.25rem 2rem;
+
       border-bottom: 1px solid var(--border-color);
+
       display: flex;
       align-items: center;
       justify-content: space-between;
+
       background: rgba(22, 27, 34, 0.8);
+
       backdrop-filter: blur(10px);
     }
+
 
     .brand {
       display: flex;
@@ -48,835 +82,2345 @@
       gap: 0.75rem;
     }
 
+
     .brand-logo {
       width: 34px;
       height: 34px;
-      background: linear-gradient(135deg, var(--accent-blue), var(--accent-purple));
+
+      background:
+        linear-gradient(
+          135deg,
+          var(--accent-blue),
+          var(--accent-purple)
+        );
+
       border-radius: 8px;
+
       display: flex;
       align-items: center;
       justify-content: center;
+
       font-weight: 700;
       color: #fff;
       font-size: 1.1rem;
+
       cursor: pointer;
       user-select: none;
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
+
+      transition:
+        transform 0.2s ease,
+        box-shadow 0.2s ease;
     }
+
 
     .brand-logo:hover {
       transform: scale(1.08);
-      box-shadow: 0 0 12px rgba(88, 166, 255, 0.5);
+
+      box-shadow:
+        0 0 12px rgba(88, 166, 255, 0.5);
     }
+
 
     .brand-logo:active {
       transform: scale(0.95);
     }
 
+
     .brand-title {
       font-size: 1.35rem;
+
       font-weight: 700;
+
       letter-spacing: -0.5px;
-      background: linear-gradient(90deg, #fff, var(--text-muted));
+
+      background:
+        linear-gradient(
+          90deg,
+          #fff,
+          var(--text-muted)
+        );
+
       -webkit-background-clip: text;
       -webkit-text-fill-color: transparent;
     }
 
+
+    /* ========================================================
+       MAIN CONTAINER
+       ======================================================== */
+
     .container {
       max-width: 1400px;
+
       width: 100%;
+
       margin: 2rem auto;
+
       padding: 0 1.5rem;
+
       display: grid;
-      grid-template-columns: minmax(0, 1fr) 380px;
+
+      grid-template-columns:
+        minmax(0, 1fr)
+        380px;
+
       gap: 1.5rem;
+
       flex-grow: 1;
     }
 
-    .editor-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      display: flex;
-      flex-direction: column;
-      overflow: hidden;
-      box-shadow: 0 10px 30px rgba(0,0,0,0.5);
-    }
 
-    .editor-header {
-      padding: 0.75rem 1.25rem;
-      background: #0d1117;
-      border-bottom: 1px solid var(--border-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .editor-title {
-      font-size: 0.85rem;
-      color: var(--text-muted);
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      font-weight: 600;
-    }
-
-    .editor-wrapper {
-      position: relative;
-      flex-grow: 1;
-      display: flex;
-      font-family: 'Fira Code', monospace;
-      font-size: 14px;
-      line-height: 1.6;
-      background: #0d1117;
-      overflow: hidden;
-      min-height: 540px;
-    }
-
-    .line-numbers {
-      width: 55px;
-      padding: 1rem 0;
-      background: #161b22;
-      border-right: 1px solid var(--border-color);
-      color: var(--text-muted);
-      text-align: right;
-      user-select: none;
-      overflow: hidden;
-    }
-
-    .line-number {
-      padding-right: 12px;
-      height: 22.4px;
-      transition: color 0.2s, background 0.2s;
-    }
-
-    .line-number.has-error {
-      color: var(--error-red);
-      font-weight: bold;
-      background: var(--error-bg);
-      position: relative;
-    }
-
-    .line-number.has-error::before {
-      content: "●";
-      position: absolute;
-      left: 8px;
-      font-size: 8px;
-    }
-
-    textarea {
-      flex-grow: 1;
-      background: transparent;
-      border: none;
-      outline: none;
-      color: var(--text-main);
-      padding: 1rem;
-      font-family: inherit;
-      font-size: inherit;
-      line-height: 1.6;
-      resize: none;
-      white-space: pre;
-      overflow-y: scroll;
-      overflow-x: auto;
-      tab-size: 4;
-    }
-
-    .action-panel {
-      display: flex;
-      flex-direction: column;
-      gap: 1.5rem;
-    }
-
-    .btn-run {
-      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
-      color: white;
-      border: none;
-      padding: 1rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 1rem;
-      cursor: pointer;
-      transition: all 0.2s ease;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      gap: 0.5rem;
-      box-shadow: 0 4px 12px rgba(88, 166, 255, 0.2);
-    }
-
-    .btn-run:hover {
-      transform: translateY(-2px);
-      box-shadow: 0 6px 20px rgba(88, 166, 255, 0.35);
-    }
-
-    .results-card {
-      background: var(--panel-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 1.25rem;
-      flex-grow: 1;
-      overflow-y: auto;
-      max-height: 580px;
-    }
-
-    .status-badge {
-      padding: 0.75rem 1rem;
-      border-radius: 8px;
-      font-weight: 600;
-      font-size: 0.9rem;
-      margin-bottom: 1rem;
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-    }
-
-    .status-pass {
-      background: rgba(63, 185, 80, 0.15);
-      color: var(--success-green);
-      border: 1px solid rgba(63, 185, 80, 0.3);
-    }
-
-    .status-fail {
-      background: var(--error-bg);
-      color: var(--error-red);
-      border: 1px solid rgba(248, 81, 73, 0.3);
-    }
-
-    .issue-item {
-      background: #0d1117;
-      border: 1px solid var(--border-color);
-      border-left: 3px solid var(--error-red);
-      border-radius: 6px;
-      padding: 1rem;
-      margin-bottom: 0.85rem;
-      font-family: 'Fira Code', monospace;
-      font-size: 0.82rem;
-    }
-
-    .issue-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 0.75rem;
-    }
-
-    .line-badge {
-      background: #21262d;
-      color: var(--accent-blue);
-      padding: 0.2rem 0.5rem;
-      border-radius: 4px;
-      font-weight: 600;
-      font-size: 0.75rem;
-      border: 1px solid var(--border-color);
-    }
-
-    .sub-issue {
-      margin-bottom: 0.75rem;
-      padding: 0.6rem;
-      border-radius: 6px;
-      background: #161b22;
-    }
-
-    .sub-issue.indent-issue {
-      border-left: 3px solid var(--accent-orange);
-    }
-
-    .sub-issue.char-issue {
-      border-left: 3px solid var(--accent-purple);
-    }
-
-    .badge {
-      display: inline-block;
-      font-size: 0.7rem;
-      font-weight: 700;
-      text-transform: uppercase;
-      padding: 0.15rem 0.4rem;
-      border-radius: 3px;
-      margin-bottom: 0.4rem;
-    }
-
-    .badge-indent {
-      background: var(--warning-bg);
-      color: var(--accent-orange);
-    }
-
-    .badge-char {
-      background: rgba(188, 140, 255, 0.15);
-      color: var(--accent-purple);
-    }
-
-    .issue-desc {
-      color: var(--text-main);
-      font-size: 0.8rem;
-    }
-
-    .char-list {
-      list-style: none;
-      padding-left: 0;
-    }
-
-    .char-list li {
-      position: relative;
-      padding-left: 1rem;
-      margin-top: 0.3rem;
-      color: #e6edf3;
-      font-size: 0.78rem;
-    }
-
-    .char-list li::before {
-      content: "›";
-      position: absolute;
-      left: 0;
-      color: var(--accent-purple);
-      font-weight: bold;
-    }
-
-    .diff-label {
-      color: var(--text-muted);
-      font-size: 0.75rem;
-      margin-top: 0.5rem;
-      display: block;
-    }
-
-    .code-diff {
-      background: #161b22;
-      padding: 0.4rem 0.6rem;
-      border-radius: 4px;
-      margin-top: 0.2rem;
-      word-break: break-all;
-      white-space: pre-wrap;
-      font-size: 0.8rem;
-    }
-
-    .diff-expected { color: var(--success-green); border: 1px solid rgba(63, 185, 80, 0.2); }
-    .diff-found { color: var(--error-red); border: 1px solid rgba(248, 81, 73, 0.2); }
-
-    @media (max-width: 900px) {
-      .container { grid-template-columns: 1fr; }
-    }
-
+    /* ========================================================
+       EDITORS GRID
+       ======================================================== */
 
     .editors-grid {
       display: grid;
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+
+      grid-template-columns:
+        repeat(2, minmax(0, 1fr));
+
       gap: 1.5rem;
+
       min-width: 0;
     }
 
+
+    /* ========================================================
+       EDITOR CARD
+       ======================================================== */
+
     .editor-card {
+      background: var(--panel-bg);
+
+      border: 1px solid var(--border-color);
+
+      border-radius: 12px;
+
+      display: flex;
+      flex-direction: column;
+
+      overflow: hidden;
+
+      box-shadow:
+        0 10px 30px rgba(0, 0, 0, 0.5);
+
       min-width: 0;
       min-height: 0;
     }
 
+
+    /* ========================================================
+       EDITOR HEADER
+       ======================================================== */
+
+    .editor-header {
+      padding: 0.75rem 1.25rem;
+
+      background: #0d1117;
+
+      border-bottom:
+        1px solid var(--border-color);
+
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+    }
+
+
+    .editor-title {
+      font-size: 0.85rem;
+
+      color: var(--text-muted);
+
+      text-transform: uppercase;
+
+      letter-spacing: 1px;
+
+      font-weight: 600;
+    }
+
+
+    .file-name {
+      color: var(--accent-blue);
+
+      font-size: 0.72rem;
+
+      font-family: 'Fira Code', monospace;
+    }
+
+
+    /* ========================================================
+       EDITOR WRAPPER
+       ======================================================== */
+
     .editor-wrapper {
+      position: relative;
+
+      flex-grow: 1;
+
+      display: flex;
+
+      font-family: 'Fira Code', monospace;
+
+      font-size: 14px;
+
+      line-height: 1.6;
+
+      background: #0d1117;
+
+      overflow: hidden;
+
       min-height: 360px;
+
       height: 360px;
     }
 
+
+    /* ========================================================
+       LINE NUMBERS
+       ======================================================== */
+
+    .line-numbers {
+      width: 55px;
+
+      padding: 1rem 0;
+
+      background: #161b22;
+
+      border-right:
+        1px solid var(--border-color);
+
+      color: var(--text-muted);
+
+      text-align: right;
+
+      user-select: none;
+
+      overflow: hidden;
+    }
+
+
+    .line-number {
+      padding-right: 12px;
+
+      height: 22.4px;
+
+      transition:
+        color 0.2s,
+        background 0.2s;
+    }
+
+
+    .line-number.has-error {
+      color: var(--error-red);
+
+      font-weight: bold;
+
+      background: var(--error-bg);
+
+      position: relative;
+    }
+
+
+    .line-number.has-error::before {
+      content: "●";
+
+      position: absolute;
+
+      left: 8px;
+
+      font-size: 8px;
+    }
+
+
+    /* ========================================================
+       TEXTAREA
+       ======================================================== */
+
+    textarea {
+      flex-grow: 1;
+
+      background: transparent;
+
+      border: none;
+
+      outline: none;
+
+      color: var(--text-main);
+
+      padding: 1rem;
+
+      font-family: inherit;
+
+      font-size: inherit;
+
+      line-height: 1.6;
+
+      resize: none;
+
+      white-space: pre;
+
+      overflow-y: scroll;
+
+      overflow-x: auto;
+
+      tab-size: 4;
+    }
+
+
+    /* ========================================================
+       EDITOR ACTIONS
+       ======================================================== */
+
     .editor-actions {
       display: flex;
+
       gap: 0.65rem;
+
       padding: 0.75rem 1rem;
+
       background: #0d1117;
-      border-top: 1px solid var(--border-color);
+
+      border-top:
+        1px solid var(--border-color);
     }
+
 
     .btn-editor {
       flex: 1;
-      border: 1px solid var(--border-color);
+
+      border:
+        1px solid var(--border-color);
+
       border-radius: 7px;
+
       padding: 0.7rem 0.75rem;
+
       font-weight: 600;
+
       cursor: pointer;
+
       color: white;
-      transition: all 0.2s ease;
+
+      transition:
+        all 0.2s ease;
     }
+
 
     .btn-editor:hover {
       transform: translateY(-1px);
     }
 
-    .btn-inspect {
-      background: linear-gradient(135deg, var(--accent-blue), #2563eb);
+
+    .btn-editor:active {
+      transform: translateY(0);
     }
 
-    .btn-fix {
-      background: linear-gradient(135deg, var(--success-green), #238636);
+
+    .btn-inspect {
+      background:
+        linear-gradient(
+          135deg,
+          var(--accent-blue),
+          #2563eb
+        );
     }
+
+
+    .btn-fix {
+      background:
+        linear-gradient(
+          135deg,
+          var(--success-green),
+          #238636
+        );
+    }
+
+
+    /* ========================================================
+       EDITOR STATUS
+       ======================================================== */
 
     .editor-status {
       padding: 0.6rem 1rem;
+
       font-size: 0.75rem;
+
       color: var(--text-muted);
-      border-top: 1px solid var(--border-color);
+
+      border-top:
+        1px solid var(--border-color);
+
       min-height: 34px;
     }
 
+
+    /* ========================================================
+       ACTION PANEL
+       ======================================================== */
+
+    .action-panel {
+      display: flex;
+
+      flex-direction: column;
+
+      gap: 1.5rem;
+    }
+
+
+    /* ========================================================
+       RESULTS CARD
+       ======================================================== */
+
     .results-card {
+      background: var(--panel-bg);
+
+      border:
+        1px solid var(--border-color);
+
+      border-radius: 12px;
+
+      padding: 1.25rem;
+
+      flex-grow: 1;
+
+      overflow-y: auto;
+
       max-height: none;
+
       min-height: 600px;
     }
 
+
+    /* ========================================================
+       STATUS BADGES
+       ======================================================== */
+
+    .status-badge {
+      padding: 0.75rem 1rem;
+
+      border-radius: 8px;
+
+      font-weight: 600;
+
+      font-size: 0.9rem;
+
+      margin-bottom: 1rem;
+
+      display: flex;
+
+      align-items: center;
+
+      gap: 0.5rem;
+    }
+
+
+    .status-pass {
+      background:
+        rgba(63, 185, 80, 0.15);
+
+      color: var(--success-green);
+
+      border:
+        1px solid rgba(63, 185, 80, 0.3);
+    }
+
+
+    .status-fail {
+      background: var(--error-bg);
+
+      color: var(--error-red);
+
+      border:
+        1px solid rgba(248, 81, 73, 0.3);
+    }
+
+
+    /* ========================================================
+       ISSUE DISPLAY
+       ======================================================== */
+
+    .issue-item {
+      background: #0d1117;
+
+      border:
+        1px solid var(--border-color);
+
+      border-left:
+        3px solid var(--error-red);
+
+      border-radius: 6px;
+
+      padding: 1rem;
+
+      margin-bottom: 0.85rem;
+
+      font-family: 'Fira Code', monospace;
+
+      font-size: 0.82rem;
+    }
+
+
+    .issue-header {
+      display: flex;
+
+      justify-content: space-between;
+
+      align-items: center;
+
+      margin-bottom: 0.75rem;
+    }
+
+
+    .line-badge {
+      background: #21262d;
+
+      color: var(--accent-blue);
+
+      padding:
+        0.2rem 0.5rem;
+
+      border-radius: 4px;
+
+      font-weight: 600;
+
+      font-size: 0.75rem;
+
+      border:
+        1px solid var(--border-color);
+    }
+
+
+    .sub-issue {
+      margin-bottom: 0.75rem;
+
+      padding: 0.6rem;
+
+      border-radius: 6px;
+
+      background: #161b22;
+    }
+
+
+    .sub-issue.indent-issue {
+      border-left:
+        3px solid var(--accent-orange);
+    }
+
+
+    .sub-issue.char-issue {
+      border-left:
+        3px solid var(--accent-purple);
+    }
+
+
+    .badge {
+      display: inline-block;
+
+      font-size: 0.7rem;
+
+      font-weight: 700;
+
+      text-transform: uppercase;
+
+      padding:
+        0.15rem 0.4rem;
+
+      border-radius: 3px;
+
+      margin-bottom: 0.4rem;
+    }
+
+
+    .badge-indent {
+      background: var(--warning-bg);
+
+      color: var(--accent-orange);
+    }
+
+
+    .badge-char {
+      background:
+        rgba(188, 140, 255, 0.15);
+
+      color: var(--accent-purple);
+    }
+
+
+    .issue-desc {
+      color: var(--text-main);
+
+      font-size: 0.8rem;
+    }
+
+
+    .char-list {
+      list-style: none;
+
+      padding-left: 0;
+    }
+
+
+    .char-list li {
+      position: relative;
+
+      padding-left: 1rem;
+
+      margin-top: 0.3rem;
+
+      color: #e6edf3;
+
+      font-size: 0.78rem;
+    }
+
+
+    .char-list li::before {
+      content: "›";
+
+      position: absolute;
+
+      left: 0;
+
+      color: var(--accent-purple);
+
+      font-weight: bold;
+    }
+
+
+    .diff-label {
+      color: var(--text-muted);
+
+      font-size: 0.75rem;
+
+      margin-top: 0.5rem;
+
+      display: block;
+    }
+
+
+    .code-diff {
+      background: #161b22;
+
+      padding:
+        0.4rem 0.6rem;
+
+      border-radius: 4px;
+
+      margin-top: 0.2rem;
+
+      word-break: break-all;
+
+      white-space: pre-wrap;
+
+      font-size: 0.8rem;
+    }
+
+
+    .diff-expected {
+      color: var(--success-green);
+
+      border:
+        1px solid rgba(63, 185, 80, 0.2);
+    }
+
+
+    .diff-found {
+      color: var(--error-red);
+
+      border:
+        1px solid rgba(248, 81, 73, 0.2);
+    }
+
+
+    /* ========================================================
+       RESPONSIVE
+       ======================================================== */
+
     @media (max-width: 1100px) {
+
+      .container {
+        grid-template-columns: 1fr;
+      }
+
       .editors-grid {
         grid-template-columns: 1fr;
       }
+
+    }
+
+
+    @media (max-width: 600px) {
+
+      header {
+        padding:
+          1rem 1.25rem;
+      }
+
+      .container {
+        padding:
+          0 1rem;
+      }
+
+      .editor-wrapper {
+        height: 320px;
+      }
+
     }
 
   </style>
+
 </head>
+
+
 <body>
 
+
+  <!-- ======================================================
+       HEADER
+       ====================================================== -->
+
   <header>
+
     <div class="brand">
-      <div class="brand-logo" onclick="loadTemplateCode()" title="">N</div>
-      <div class="brand-title">Nova Debug</div>
+
+      <div
+        class="brand-logo"
+        onclick="loadTemplateCode()"
+        title="Load all five default codes"
+      >
+        N
+      </div>
+
+      <div class="brand-title">
+        Nova Debug
+      </div>
+
     </div>
+
   </header>
 
+
+  <!-- ======================================================
+       MAIN CONTAINER
+       ====================================================== -->
+
   <div class="container">
+
+
+    <!-- ====================================================
+         FIVE CODE EDITORS
+         ==================================================== -->
+
     <div class="editors-grid">
-      <div class="editor-card">
-        <div class="editor-header">
-          <span class="editor-title">Code Editor 1</span>
-          <span style="color: var(--text-muted); font-size: 0.72rem;">PYTHON</span>
-        </div>
 
-        <div class="editor-wrapper">
-          <div class="line-numbers" id="lineNumbers1">
-            <div class="line-number">1</div>
-          </div>
-          <textarea id="codeEditor1" placeholder="Paste or write your Python code here..." spellcheck="false"></textarea>
-        </div>
 
-        <div class="editor-actions">
-          <button class="btn-editor btn-inspect" onclick="runDebugger(1)">▶ Run</button>
-          <button class="btn-editor btn-fix" onclick="fixIndentation(1)">✓ Fix</button>
-        </div>
-
-        <div class="editor-status" id="editorStatus1">Ready</div>
-      </div>
+      <!-- ==================================================
+           EDITOR 1
+           app/__init__.py
+           ================================================== -->
 
       <div class="editor-card">
+
         <div class="editor-header">
-          <span class="editor-title">Code Editor 2</span>
-          <span style="color: var(--text-muted); font-size: 0.72rem;">PYTHON</span>
+
+          <span class="editor-title">
+            Code Editor 1
+          </span>
+
+          <span class="file-name">
+            app/__init__.py
+          </span>
+
         </div>
+
 
         <div class="editor-wrapper">
-          <div class="line-numbers" id="lineNumbers2">
+
+          <div
+            class="line-numbers"
+            id="lineNumbers1"
+          >
             <div class="line-number">1</div>
           </div>
-          <textarea id="codeEditor2" placeholder="Paste or write your Python code here..." spellcheck="false"></textarea>
+
+          <textarea
+            id="codeEditor1"
+            placeholder="Paste or write your Python code here..."
+            spellcheck="false"
+          ></textarea>
+
         </div>
+
 
         <div class="editor-actions">
-          <button class="btn-editor btn-inspect" onclick="runDebugger(2)">▶ Run</button>
-          <button class="btn-editor btn-fix" onclick="fixIndentation(2)">✓ Fix</button>
+
+          <button
+            class="btn-editor btn-inspect"
+            onclick="runDebugger(1)"
+          >
+            ▶ Run
+          </button>
+
+          <button
+            class="btn-editor btn-fix"
+            onclick="fixCode(1)"
+          >
+            ✓ Fix
+          </button>
+
         </div>
 
-        <div class="editor-status" id="editorStatus2">Ready</div>
+
+        <div
+          class="editor-status"
+          id="editorStatus1"
+        >
+          Ready
+        </div>
+
       </div>
+
+
+
+      <!-- ==================================================
+           EDITOR 2
+           app/youtube/__init__.py
+           ================================================== -->
 
       <div class="editor-card">
+
         <div class="editor-header">
-          <span class="editor-title">Code Editor 3</span>
-          <span style="color: var(--text-muted); font-size: 0.72rem;">PYTHON</span>
+
+          <span class="editor-title">
+            Code Editor 2
+          </span>
+
+          <span class="file-name">
+            app/youtube/__init__.py
+          </span>
+
         </div>
+
 
         <div class="editor-wrapper">
-          <div class="line-numbers" id="lineNumbers3">
+
+          <div
+            class="line-numbers"
+            id="lineNumbers2"
+          >
             <div class="line-number">1</div>
           </div>
-          <textarea id="codeEditor3" placeholder="Paste or write your Python code here..." spellcheck="false"></textarea>
+
+          <textarea
+            id="codeEditor2"
+            placeholder="Paste or write your Python code here..."
+            spellcheck="false"
+          ></textarea>
+
         </div>
+
 
         <div class="editor-actions">
-          <button class="btn-editor btn-inspect" onclick="runDebugger(3)">▶ Run</button>
-          <button class="btn-editor btn-fix" onclick="fixIndentation(3)">✓ Fix</button>
+
+          <button
+            class="btn-editor btn-inspect"
+            onclick="runDebugger(2)"
+          >
+            ▶ Run
+          </button>
+
+          <button
+            class="btn-editor btn-fix"
+            onclick="fixCode(2)"
+          >
+            ✓ Fix
+          </button>
+
         </div>
 
-        <div class="editor-status" id="editorStatus3">Ready</div>
+
+        <div
+          class="editor-status"
+          id="editorStatus2"
+        >
+          Ready
+        </div>
+
       </div>
+
+
+
+      <!-- ==================================================
+           EDITOR 3
+           app/youtube/player.py
+           ================================================== -->
 
       <div class="editor-card">
+
         <div class="editor-header">
-          <span class="editor-title">Code Editor 4</span>
-          <span style="color: var(--text-muted); font-size: 0.72rem;">PYTHON</span>
+
+          <span class="editor-title">
+            Code Editor 3
+          </span>
+
+          <span class="file-name">
+            app/youtube/player.py
+          </span>
+
         </div>
+
 
         <div class="editor-wrapper">
-          <div class="line-numbers" id="lineNumbers4">
+
+          <div
+            class="line-numbers"
+            id="lineNumbers3"
+          >
             <div class="line-number">1</div>
           </div>
-          <textarea id="codeEditor4" placeholder="Paste or write your Python code here..." spellcheck="false"></textarea>
+
+          <textarea
+            id="codeEditor3"
+            placeholder="Paste or write your Python code here..."
+            spellcheck="false"
+          ></textarea>
+
         </div>
+
 
         <div class="editor-actions">
-          <button class="btn-editor btn-inspect" onclick="runDebugger(4)">▶ Run</button>
-          <button class="btn-editor btn-fix" onclick="fixIndentation(4)">✓ Fix</button>
+
+          <button
+            class="btn-editor btn-inspect"
+            onclick="runDebugger(3)"
+          >
+            ▶ Run
+          </button>
+
+          <button
+            class="btn-editor btn-fix"
+            onclick="fixCode(3)"
+          >
+            ✓ Fix
+          </button>
+
         </div>
 
-        <div class="editor-status" id="editorStatus4">Ready</div>
+
+        <div
+          class="editor-status"
+          id="editorStatus3"
+        >
+          Ready
+        </div>
+
       </div>
+
+
+
+      <!-- ==================================================
+           EDITOR 4
+           wsgi.py
+           ================================================== -->
 
       <div class="editor-card">
+
         <div class="editor-header">
-          <span class="editor-title">Code Editor 5</span>
-          <span style="color: var(--text-muted); font-size: 0.72rem;">PYTHON</span>
+
+          <span class="editor-title">
+            Code Editor 4
+          </span>
+
+          <span class="file-name">
+            wsgi.py
+          </span>
+
         </div>
+
 
         <div class="editor-wrapper">
-          <div class="line-numbers" id="lineNumbers5">
+
+          <div
+            class="line-numbers"
+            id="lineNumbers4"
+          >
             <div class="line-number">1</div>
           </div>
-          <textarea id="codeEditor5" placeholder="Paste or write your Python code here..." spellcheck="false"></textarea>
+
+          <textarea
+            id="codeEditor4"
+            placeholder="Paste or write your Python code here..."
+            spellcheck="false"
+          ></textarea>
+
         </div>
+
 
         <div class="editor-actions">
-          <button class="btn-editor btn-inspect" onclick="runDebugger(5)">▶ Run</button>
-          <button class="btn-editor btn-fix" onclick="fixIndentation(5)">✓ Fix</button>
+
+          <button
+            class="btn-editor btn-inspect"
+            onclick="runDebugger(4)"
+          >
+            ▶ Run
+          </button>
+
+          <button
+            class="btn-editor btn-fix"
+            onclick="fixCode(4)"
+          >
+            ✓ Fix
+          </button>
+
         </div>
 
-        <div class="editor-status" id="editorStatus5">Ready</div>
+
+        <div
+          class="editor-status"
+          id="editorStatus4"
+        >
+          Ready
+        </div>
+
       </div>
+
+
+
+      <!-- ==================================================
+           EDITOR 5
+           templates/index.html
+           ================================================== -->
+
+      <div class="editor-card">
+
+        <div class="editor-header">
+
+          <span class="editor-title">
+            Code Editor 5
+          </span>
+
+          <span class="file-name">
+            templates/index.html
+          </span>
+
+        </div>
+
+
+        <div class="editor-wrapper">
+
+          <div
+            class="line-numbers"
+            id="lineNumbers5"
+          >
+            <div class="line-number">1</div>
+          </div>
+
+          <textarea
+            id="codeEditor5"
+            placeholder="Paste or write your HTML code here..."
+            spellcheck="false"
+          ></textarea>
+
+        </div>
+
+
+        <div class="editor-actions">
+
+          <button
+            class="btn-editor btn-inspect"
+            onclick="runDebugger(5)"
+          >
+            ▶ Run
+          </button>
+
+          <button
+            class="btn-editor btn-fix"
+            onclick="fixCode(5)"
+          >
+            ✓ Fix
+          </button>
+
+        </div>
+
+
+        <div
+          class="editor-status"
+          id="editorStatus5"
+        >
+          Ready
+        </div>
+
+      </div>
+
+
     </div>
+
+
+    <!-- ====================================================
+         RESULTS PANEL
+         ==================================================== -->
 
     <div class="action-panel">
+
       <div class="results-card">
+
         <div id="resultsContainer">
-          <p style="color: var(--text-muted); font-size: 0.9rem; text-align: center; margin-top: 2rem;">
-            Run any editor to inspect it, or click the "N" logo to load the default registered code into all five editors.
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.9rem;
+              text-align: center;
+              margin-top: 2rem;
+            "
+          >
+            Run any editor to inspect it, or click the
+            "N" logo to load the five default registered
+            codes.
           </p>
+
         </div>
+
       </div>
+
     </div>
+
+
   </div>
 
+
+  <!-- ======================================================
+       JAVASCRIPT
+       ====================================================== -->
+
   <script>
+
+
+    /* ======================================================
+       EDITOR CONFIGURATION
+       ====================================================== */
+
     const editorCount = 5;
 
     const editors = [];
+
     const lineNumbers = [];
+
     const editorStatuses = [];
 
-    for (let i = 1; i <= editorCount; i++) {
-      editors.push(document.getElementById(`codeEditor${i}`));
-      lineNumbers.push(document.getElementById(`lineNumbers${i}`));
-      editorStatuses.push(document.getElementById(`editorStatus${i}`));
+
+    for (
+      let i = 1;
+      i <= editorCount;
+      i++
+    ) {
+
+      editors.push(
+        document.getElementById(
+          `codeEditor${i}`
+        )
+      );
+
+      lineNumbers.push(
+        document.getElementById(
+          `lineNumbers${i}`
+        )
+      );
+
+      editorStatuses.push(
+        document.getElementById(
+          `editorStatus${i}`
+        )
+      );
+
     }
 
-    const resultsContainer = document.getElementById('resultsContainer');
 
-    function updateLineNumbers(editorIndex, errorLines = []) {
-      const editor = editors[editorIndex - 1];
-      const numbers = lineNumbers[editorIndex - 1];
+    const resultsContainer =
+      document.getElementById(
+        "resultsContainer"
+      );
 
-      const lines = editor.value.split('\n');
-      const lineCount = Math.max(lines.length, 1);
 
-      let numbersHtml = '';
+    /* ======================================================
+       EDITOR → BACKEND ID
+       ====================================================== */
 
-      for (let i = 1; i <= lineCount; i++) {
-        const isError = errorLines.includes(i);
-        numbersHtml += `<div class="line-number ${isError ? 'has-error' : ''}">${i}</div>`;
+    function getEditorId(editorIndex) {
+
+      return `editor${editorIndex}`;
+
+    }
+
+
+    /* ======================================================
+       LINE NUMBERS
+       ====================================================== */
+
+    function updateLineNumbers(
+      editorIndex,
+      errorLines = []
+    ) {
+
+      const editor =
+        editors[editorIndex - 1];
+
+      const numbers =
+        lineNumbers[editorIndex - 1];
+
+
+      const lines =
+        editor.value.split("\n");
+
+
+      const lineCount =
+        Math.max(
+          lines.length,
+          1
+        );
+
+
+      let numbersHtml = "";
+
+
+      for (
+        let i = 1;
+        i <= lineCount;
+        i++
+      ) {
+
+        const isError =
+          errorLines.includes(i);
+
+
+        numbersHtml +=
+          `<div class="line-number ${
+            isError
+              ? "has-error"
+              : ""
+          }">${i}</div>`;
+
       }
 
-      numbers.innerHTML = numbersHtml;
+
+      numbers.innerHTML =
+        numbersHtml;
+
     }
 
-    function setEditorStatus(editorIndex, message) {
-      editorStatuses[editorIndex - 1].textContent = message;
+
+    /* ======================================================
+       STATUS
+       ====================================================== */
+
+    function setEditorStatus(
+      editorIndex,
+      message
+    ) {
+
+      editorStatuses[
+        editorIndex - 1
+      ].textContent = message;
+
     }
 
-    editors.forEach((editor, zeroIndex) => {
-      const editorIndex = zeroIndex + 1;
 
-      editor.addEventListener('keydown', (e) => {
-        if (e.key === 'Tab') {
-          e.preventDefault();
+    /* ======================================================
+       TAB SUPPORT
+       ====================================================== */
 
-          const start = editor.selectionStart;
-          const end = editor.selectionEnd;
+    editors.forEach(
+      (editor, zeroIndex) => {
 
-          editor.value =
-            editor.value.substring(0, start) +
-            "    " +
-            editor.value.substring(end);
+        const editorIndex =
+          zeroIndex + 1;
 
-          editor.selectionStart = editor.selectionEnd = start + 4;
 
-          updateLineNumbers(editorIndex);
-        }
-      });
+        editor.addEventListener(
+          "keydown",
+          (e) => {
 
-      editor.addEventListener('input', () => {
-        updateLineNumbers(editorIndex);
-        setEditorStatus(editorIndex, 'Modified');
-      });
+            if (e.key === "Tab") {
 
-      editor.addEventListener('scroll', () => {
-        lineNumbers[zeroIndex].scrollTop = editor.scrollTop;
-      });
+              e.preventDefault();
 
-      updateLineNumbers(editorIndex);
-    });
 
-    async function loadTemplateCode() {
-      try {
-        const response = await fetch('/template');
-        const data = await response.json();
+              const start =
+                editor.selectionStart;
 
-        if (data.template_code) {
-          editors.forEach((editor, index) => {
-            editor.value = data.template_code;
-            updateLineNumbers(index + 1);
-            setEditorStatus(index + 1, 'Default code loaded');
-          });
+              const end =
+                editor.selectionEnd;
 
-          resultsContainer.innerHTML = `
-            <div class="status-badge status-pass">
-              ✨ Default registered code loaded into all 5 editors
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-              Each editor is independent. You can paste a different Python file into each window and inspect or fix it separately.
-            </p>
-          `;
-        }
-      } catch (err) {
-        resultsContainer.innerHTML =
-          `<p style="color: var(--error-red); text-align: center;">Failed to fetch template code.</p>`;
-      }
-    }
 
-    async function runDebugger(editorIndex) {
-      const editor = editors[editorIndex - 1];
-      const inputCode = editor.value;
+              editor.value =
+                editor.value.substring(
+                  0,
+                  start
+                )
+                +
+                "    "
+                +
+                editor.value.substring(
+                  end
+                );
 
-      setEditorStatus(editorIndex, 'Analyzing...');
-      resultsContainer.innerHTML =
-        `<p style="color: var(--text-muted); text-align: center;">Analyzing Code Editor ${editorIndex}...</p>`;
 
-      try {
-        const response = await fetch('/compare', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input_code: inputCode })
-        });
+              editor.selectionStart =
+                editor.selectionEnd =
+                  start + 4;
 
-        const data = await response.json();
 
-        if (data.match) {
-          updateLineNumbers(editorIndex);
-          setEditorStatus(editorIndex, 'Inspection passed');
+              updateLineNumbers(
+                editorIndex
+              );
 
-          resultsContainer.innerHTML = `
-            <div class="status-badge status-pass">
-              ✅ Editor ${editorIndex}: Inspection Passed — 0 Errors Found
-            </div>
-          `;
-        } else {
-          const errorLineNumbers =
-            data.errors.map(err => err.line_no).filter(Boolean);
-
-          updateLineNumbers(editorIndex, errorLineNumbers);
-          setEditorStatus(
-            editorIndex,
-            `${data.errors.length} issue(s) detected`
-          );
-
-          let html = `
-            <div class="status-badge status-fail">
-              ⚠️ Editor ${editorIndex}: ${data.errors.length} Line Issue(s) Detected
-            </div>
-          `;
-
-          data.errors.forEach((err, idx) => {
-            const lineBadgeText =
-              err.line_no ? `LINE ${err.line_no}` : 'GENERAL';
-
-            html += `<div class="issue-item">`;
-
-            html += `
-              <div class="issue-header">
-                <span style="color: var(--error-red); font-weight: 700;">
-                  ISSUE #${idx + 1}
-                </span>
-                <span class="line-badge">${lineBadgeText}</span>
-              </div>
-            `;
-
-            if (err.type) {
-              html += `
-                <div class="issue-desc"
-                     style="margin-bottom:0.5rem; color: var(--error-red);">
-                  ${escapeHtml(err.message)}
-                </div>
-              `;
-
-              if (err.expected) {
-                html += `
-                  <span class="diff-label">Expected:</span>
-                  <div class="code-diff diff-expected">
-                    ${escapeHtml(err.expected)}
-                  </div>
-                `;
-              }
-
-              if (err.found) {
-                html += `
-                  <span class="diff-label">Found:</span>
-                  <div class="code-diff diff-found">
-                    ${escapeHtml(err.found)}
-                  </div>
-                `;
-              }
-            } else {
-              if (err.indentation) {
-                html += `
-                  <div class="sub-issue indent-issue">
-                    <span class="badge badge-indent">Indentation Error</span>
-                    <p class="issue-desc">
-                      ${escapeHtml(err.indentation.message)}
-                    </p>
-                  </div>
-                `;
-              }
-
-              if (
-                err.character_mismatches &&
-                err.character_mismatches.length > 0
-              ) {
-                html += `
-                  <div class="sub-issue char-issue">
-                    <span class="badge badge-char">Character Mismatch</span>
-                    <ul class="char-list">
-                      ${err.character_mismatches
-                        .map(msg => `<li>${escapeHtml(msg)}</li>`)
-                        .join('')}
-                    </ul>
-                  </div>
-                `;
-              }
-
-              if (err.expected_line !== undefined) {
-                html += `
-                  <span class="diff-label">Expected Line:</span>
-                  <div class="code-diff diff-expected">
-                    ${escapeHtml(err.expected_line)}
-                  </div>
-                `;
-              }
-
-              if (err.found_line !== undefined) {
-                html += `
-                  <span class="diff-label">Submitted Line:</span>
-                  <div class="code-diff diff-found">
-                    ${escapeHtml(err.found_line)}
-                  </div>
-                `;
-              }
             }
 
-            html += `</div>`;
-          });
+          }
+        );
 
-          resultsContainer.innerHTML = html;
-        }
-      } catch (err) {
-        setEditorStatus(editorIndex, 'Backend communication failed');
 
-        resultsContainer.innerHTML =
-          `<p style="color: var(--error-red); text-align: center;">
-             Failed to communicate with Nova Debug backend.
-           </p>`;
+        /* ==================================================
+           INPUT EVENT
+           ================================================== */
+
+        editor.addEventListener(
+          "input",
+          () => {
+
+            updateLineNumbers(
+              editorIndex
+            );
+
+            setEditorStatus(
+              editorIndex,
+              "Modified"
+            );
+
+          }
+        );
+
+
+        /* ==================================================
+           SCROLL SYNCHRONIZATION
+           ================================================== */
+
+        editor.addEventListener(
+          "scroll",
+          () => {
+
+            lineNumbers[
+              zeroIndex
+            ].scrollTop =
+              editor.scrollTop;
+
+          }
+        );
+
+
+        updateLineNumbers(
+          editorIndex
+        );
+
       }
-    }
+    );
 
-    async function fixIndentation(editorIndex) {
-      const editor = editors[editorIndex - 1];
 
-      if (!editor.value.trim()) {
-        setEditorStatus(editorIndex, 'Nothing to fix');
-        resultsContainer.innerHTML = `
-          <div class="status-badge status-fail">
-            ⚠️ Editor ${editorIndex} is empty
-          </div>
-        `;
-        return;
-      }
+    /* ======================================================
+       LOAD ALL FIVE DEFAULT CODES
+       ====================================================== */
 
-      setEditorStatus(editorIndex, 'Checking indentation...');
+    async function loadTemplateCode() {
 
       try {
-        const response = await fetch('/fix-indentation', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ input_code: editor.value })
-        });
 
-        const data = await response.json();
+        resultsContainer.innerHTML = `
+          <p
+            style="
+              color: var(--text-muted);
+              text-align: center;
+            "
+          >
+            Loading all five default codes...
+          </p>
+        `;
 
-        if (!data.success) {
-          throw new Error('Fix operation failed');
-        }
 
-        if (data.changed_count > 0) {
-          editor.value = data.fixed_code;
-          updateLineNumbers(editorIndex);
-          setEditorStatus(
-            editorIndex,
-            `Fixed ${data.changed_count} indentation line(s)`
+        const response =
+          await fetch(
+            "/template"
           );
 
-          resultsContainer.innerHTML = `
-            <div class="status-badge status-pass">
-              ✅ Editor ${editorIndex}: Indentation Fixed
-            </div>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-              Only leading indentation was changed. Code characters and
-              functionality were not rewritten.
-            </p>
-            <p style="color: var(--text-muted); font-size: 0.8rem; margin-top: 0.6rem;">
-              Fixed line(s): ${data.changed_lines.join(', ')}
-            </p>
-          `;
-        } else {
-          updateLineNumbers(editorIndex);
-          setEditorStatus(editorIndex, 'No safe indentation change found');
+
+        const data =
+          await response.json();
+
+
+        if (
+          !data.success ||
+          !data.templates
+        ) {
+
+          throw new Error(
+            "Template data unavailable"
+          );
+
+        }
+
+
+        /* ================================================
+           Load each editor's OWN code
+           ================================================ */
+
+        for (
+          let i = 1;
+          i <= editorCount;
+          i++
+        ) {
+
+          const editorId =
+            getEditorId(i);
+
+
+          const code =
+            data.templates[
+              editorId
+            ];
+
+
+          if (
+            code !== undefined
+          ) {
+
+            editors[i - 1].value =
+              code;
+
+
+            updateLineNumbers(
+              i
+            );
+
+
+            setEditorStatus(
+              i,
+              "Default code loaded"
+            );
+
+          }
+
+        }
+
+
+        resultsContainer.innerHTML = `
+
+          <div class="status-badge status-pass">
+
+            ✨ All 5 default codes loaded
+
+          </div>
+
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+              line-height: 1.6;
+            "
+          >
+
+            Each editor now contains its own
+            registered/default code.
+
+          </p>
+
+
+          <div
+            style="
+              margin-top: 1rem;
+              font-family: 'Fira Code', monospace;
+              font-size: 0.78rem;
+              color: var(--text-muted);
+              line-height: 1.8;
+            "
+          >
+
+            <div>Editor 1 → app/__init__.py</div>
+
+            <div>Editor 2 → app/youtube/__init__.py</div>
+
+            <div>Editor 3 → app/youtube/player.py</div>
+
+            <div>Editor 4 → wsgi.py</div>
+
+            <div>Editor 5 → templates/index.html</div>
+
+          </div>
+
+        `;
+
+
+      } catch (err) {
+
+        console.error(
+          "Template loading error:",
+          err
+        );
+
+
+        resultsContainer.innerHTML = `
+
+          <div class="status-badge status-fail">
+
+            ❌ Failed to load default codes
+
+          </div>
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+            "
+          >
+
+            Make sure the Flask backend is
+            running and the /template endpoint
+            is available.
+
+          </p>
+
+        `;
+
+      }
+
+    }
+
+
+    /* ======================================================
+       RUN / INSPECT EDITOR
+       ====================================================== */
+
+    async function runDebugger(
+      editorIndex
+    ) {
+
+      const editor =
+        editors[editorIndex - 1];
+
+
+      const inputCode =
+        editor.value;
+
+
+      const editorId =
+        getEditorId(
+          editorIndex
+        );
+
+
+      setEditorStatus(
+        editorIndex,
+        "Analyzing..."
+      );
+
+
+      resultsContainer.innerHTML = `
+
+        <p
+          style="
+            color: var(--text-muted);
+            text-align: center;
+          "
+        >
+
+          Analyzing Code Editor
+          ${editorIndex}...
+
+        </p>
+
+      `;
+
+
+      try {
+
+        const response =
+          await fetch(
+            "/compare",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                editor_id:
+                  editorId,
+
+                input_code:
+                  inputCode
+
+              })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        /* ================================================
+           MATCH
+           ================================================ */
+
+        if (data.match) {
+
+          updateLineNumbers(
+            editorIndex
+          );
+
+
+          setEditorStatus(
+            editorIndex,
+            "Inspection passed"
+          );
+
 
           resultsContainer.innerHTML = `
+
             <div class="status-badge status-pass">
-              ✓ Editor ${editorIndex}: No indentation-only correction was needed
+
+              ✅ Editor ${editorIndex}:
+              Inspection Passed —
+              0 Errors Found
+
             </div>
-            <p style="color: var(--text-muted); font-size: 0.85rem;">
-              The Fix button only changes indentation when the code content
-              matches the registered/default code line-by-line.
+
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.85rem;
+              "
+            >
+
+              The code matches the registered
+              default code for this editor.
+
             </p>
+
           `;
+
+
+          return;
+
         }
-      } catch (err) {
-        setEditorStatus(editorIndex, 'Fix failed');
+
+
+        /* ================================================
+           ERRORS
+           ================================================ */
+
+        const errors =
+          Array.isArray(data.errors)
+            ? data.errors
+            : [];
+
+
+        const errorLineNumbers =
+          errors
+            .map(
+              err =>
+                err.line_no
+            )
+            .filter(Boolean);
+
+
+        updateLineNumbers(
+          editorIndex,
+          errorLineNumbers
+        );
+
+
+        setEditorStatus(
+          editorIndex,
+          `${errors.length} issue(s) detected`
+        );
+
+
+        let html = `
+
+          <div class="status-badge status-fail">
+
+            ⚠️ Editor ${editorIndex}:
+            ${errors.length}
+            Issue(s) Detected
+
+          </div>
+
+        `;
+
+
+        /* ==============================================
+           NO ERROR DETAILS
+           ============================================== */
+
+        if (
+          errors.length === 0
+        ) {
+
+          html += `
+
+            <p
+              style="
+                color: var(--text-muted);
+                font-size: 0.85rem;
+              "
+            >
+
+              The submitted code does not match
+              the registered code.
+
+            </p>
+
+          `;
+
+        }
+
+
+        /* ==============================================
+           RENDER EACH ERROR
+           ============================================== */
+
+        errors.forEach(
+          (err, idx) => {
+
+            const lineBadgeText =
+              err.line_no
+                ? `LINE ${err.line_no}`
+                : "GENERAL";
+
+
+            html += `
+
+              <div class="issue-item">
+
+                <div class="issue-header">
+
+                  <span
+                    style="
+                      color: var(--error-red);
+                      font-weight: 700;
+                    "
+                  >
+                    ISSUE #${idx + 1}
+                  </span>
+
+                  <span class="line-badge">
+
+                    ${lineBadgeText}
+
+                  </span>
+
+                </div>
+
+            `;
+
+
+            /* ==========================================
+               GENERAL ERROR
+               ========================================== */
+
+            if (err.type) {
+
+              html += `
+
+                <div
+                  class="issue-desc"
+                  style="
+                    margin-bottom: 0.5rem;
+                    color: var(--error-red);
+                  "
+                >
+
+                  ${escapeHtml(
+                    err.message
+                  )}
+
+                </div>
+
+              `;
+
+
+              if (
+                err.expected
+              ) {
+
+                html += `
+
+                  <span class="diff-label">
+                    Expected:
+                  </span>
+
+                  <div
+                    class="
+                      code-diff
+                      diff-expected
+                    "
+                  >
+
+                    ${escapeHtml(
+                      err.expected
+                    )}
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                err.found
+              ) {
+
+                html += `
+
+                  <span class="diff-label">
+                    Found:
+                  </span>
+
+                  <div
+                    class="
+                      code-diff
+                      diff-found
+                    "
+                  >
+
+                    ${escapeHtml(
+                      err.found
+                    )}
+
+                  </div>
+
+                `;
+
+              }
+
+            }
+
+
+            /* ==========================================
+               LINE ERROR
+               ========================================== */
+
+            else {
+
+              if (
+                err.indentation
+              ) {
+
+                html += `
+
+                  <div
+                    class="
+                      sub-issue
+                      indent-issue
+                    "
+                  >
+
+                    <span
+                      class="
+                        badge
+                        badge-indent
+                      "
+                    >
+                      Indentation Error
+                    </span>
+
+                    <p
+                      class="issue-desc"
+                    >
+
+                      ${escapeHtml(
+                        err.indentation.message
+                      )}
+
+                    </p>
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                err.character_mismatches
+                &&
+                err.character_mismatches.length
+              ) {
+
+                html += `
+
+                  <div
+                    class="
+                      sub-issue
+                      char-issue
+                    "
+                  >
+
+                    <span
+                      class="
+                        badge
+                        badge-char
+                      "
+                    >
+                      Character Mismatch
+                    </span>
+
+                    <ul
+                      class="char-list"
+                    >
+
+                      ${err
+                        .character_mismatches
+                        .map(
+                          msg =>
+                            `<li>${escapeHtml(msg)}</li>`
+                        )
+                        .join("")
+                      }
+
+                    </ul>
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                err.expected_line !==
+                undefined
+              ) {
+
+                html += `
+
+                  <span
+                    class="diff-label"
+                  >
+                    Expected Line:
+                  </span>
+
+                  <div
+                    class="
+                      code-diff
+                      diff-expected
+                    "
+                  >
+
+                    ${escapeHtml(
+                      err.expected_line
+                    )}
+
+                  </div>
+
+                `;
+
+              }
+
+
+              if (
+                err.found_line !==
+                undefined
+              ) {
+
+                html += `
+
+                  <span
+                    class="diff-label"
+                  >
+                    Submitted Line:
+                  </span>
+
+                  <div
+                    class="
+                      code-diff
+                      diff-found
+                    "
+                  >
+
+                    ${escapeHtml(
+                      err.found_line
+                    )}
+
+                  </div>
+
+                `;
+
+              }
+
+            }
+
+
+            html += `
+
+              </div>
+
+            `;
+
+          }
+        );
+
 
         resultsContainer.innerHTML =
-          `<p style="color: var(--error-red); text-align: center;">
-             Failed to fix indentation.
-           </p>`;
+          html;
+
+
+      } catch (err) {
+
+        console.error(
+          "Compare error:",
+          err
+        );
+
+
+        setEditorStatus(
+          editorIndex,
+          "Backend communication failed"
+        );
+
+
+        resultsContainer.innerHTML = `
+
+          <div
+            class="status-badge status-fail"
+          >
+
+            ❌ Backend communication failed
+
+          </div>
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+            "
+          >
+
+            Failed to communicate with
+            Nova Debug backend.
+
+          </p>
+
+        `;
+
       }
+
     }
 
-    function escapeHtml(str) {
-      if (str === null || str === undefined) return '';
+
+    /* ======================================================
+       FULL CODE FIX
+       ====================================================== */
+
+    async function fixCode(
+      editorIndex
+    ) {
+
+      const editor =
+        editors[editorIndex - 1];
+
+
+      const editorId =
+        getEditorId(
+          editorIndex
+        );
+
+
+      setEditorStatus(
+        editorIndex,
+        "Restoring default code..."
+      );
+
+
+      try {
+
+        const response =
+          await fetch(
+            "/fix",
+            {
+              method: "POST",
+
+              headers: {
+                "Content-Type":
+                  "application/json"
+              },
+
+              body: JSON.stringify({
+
+                editor_id:
+                  editorId
+
+              })
+
+            }
+          );
+
+
+        const data =
+          await response.json();
+
+
+        if (
+          !response.ok ||
+          !data.success
+        ) {
+
+          throw new Error(
+            data.message ||
+            "Fix operation failed"
+          );
+
+        }
+
+
+        /* ================================================
+           IMPORTANT:
+           ENTIRE EDITOR CONTENT IS REPLACED
+           ================================================ */
+
+        editor.value =
+          data.fixed_code;
+
+
+        /* ================================================
+           REFRESH LINE NUMBERS
+           ================================================ */
+
+        updateLineNumbers(
+          editorIndex
+        );
+
+
+        /* ================================================
+           UPDATE STATUS
+           ================================================ */
+
+        setEditorStatus(
+          editorIndex,
+          "Default code restored"
+        );
+
+
+        /* ================================================
+           CLEAR ERROR MARKERS
+           ================================================ */
+
+        updateLineNumbers(
+          editorIndex,
+          []
+        );
+
+
+        /* ================================================
+           RESULTS PANEL
+           ================================================ */
+
+        const fileNames = {
+
+          1:
+            "app/__init__.py",
+
+          2:
+            "app/youtube/__init__.py",
+
+          3:
+            "app/youtube/player.py",
+
+          4:
+            "wsgi.py",
+
+          5:
+            "templates/index.html"
+
+        };
+
+
+        resultsContainer.innerHTML = `
+
+          <div
+            class="status-badge status-pass"
+          >
+
+            ✅ Editor ${editorIndex} Fixed
+
+          </div>
+
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+              line-height: 1.6;
+            "
+          >
+
+            The entire contents of
+            <strong
+              style="color: var(--text-main);"
+            >
+              ${escapeHtml(
+                fileNames[editorIndex]
+              )}
+            </strong>
+
+            have been replaced with the
+            registered default code.
+
+          </p>
+
+
+          <div
+            style="
+              margin-top: 1rem;
+              padding: 0.75rem;
+              border-radius: 6px;
+              background: #0d1117;
+              border: 1px solid var(--border-color);
+              font-family: 'Fira Code', monospace;
+              font-size: 0.75rem;
+              color: var(--success-green);
+            "
+          >
+
+            ✓ Complete code restored
+
+          </div>
+
+        `;
+
+
+      } catch (err) {
+
+        console.error(
+          "Fix error:",
+          err
+        );
+
+
+        setEditorStatus(
+          editorIndex,
+          "Fix failed"
+        );
+
+
+        resultsContainer.innerHTML = `
+
+          <div
+            class="status-badge status-fail"
+          >
+
+            ❌ Fix Failed
+
+          </div>
+
+
+          <p
+            style="
+              color: var(--text-muted);
+              font-size: 0.85rem;
+            "
+          >
+
+            ${escapeHtml(
+              err.message ||
+              "Could not restore the default code."
+            )}
+
+          </p>
+
+        `;
+
+      }
+
+    }
+
+
+    /* ======================================================
+       HTML ESCAPING
+       ====================================================== */
+
+    function escapeHtml(
+      str
+    ) {
+
+      if (
+        str === null ||
+        str === undefined
+      ) {
+
+        return "";
+
+      }
+
 
       return String(str)
-        .replace(/&/g, "&amp;")
-        .replace(/</g, "&lt;")
-        .replace(/>/g, "&gt;");
+
+        .replace(
+          /&/g,
+          "&amp;"
+        )
+
+        .replace(
+          /</g,
+          "&lt;"
+        )
+
+        .replace(
+          />/g,
+          "&gt;"
+        )
+
+        .replace(
+          /"/g,
+          "&quot;"
+        )
+
+        .replace(
+          /'/g,
+          "&#039;"
+        );
+
     }
 
-    // Load line numbers on first page load.
-    for (let i = 1; i <= editorCount; i++) {
-      updateLineNumbers(i);
+
+    /* ======================================================
+       INITIAL LINE NUMBERS
+       ====================================================== */
+
+    for (
+      let i = 1;
+      i <= editorCount;
+      i++
+    ) {
+
+      updateLineNumbers(
+        i
+      );
+
     }
+
+
   </script>
+
+
 </body>
+
 </html>
