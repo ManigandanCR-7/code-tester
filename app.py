@@ -1,144 +1,363 @@
-import os
+```python
 import re
 import difflib
 from flask import Flask, render_template, request, jsonify
 
-app = Flask(__name__)
-
-# Registered code for the agent service
-REGISTERED_CODE = r'''import os, re, urllib.parse, urllib.request
-from flask import Flask, abort, jsonify, render_template, request
 
 app = Flask(__name__)
 
-def get_vid(q):
-    try:
-        enc = urllib.parse.quote(q)
-        url = f"https://www.youtube.com/results?search_query={enc}"
-        req = urllib.request.Request(url, headers={"User-Agent": "Mozilla/5.0"})
-        data = urllib.request.urlopen(req, timeout=5).read().decode()
-        ids = re.findall(r"\"videoId\":\"([^\"]+)\"", data)
-        return ids[0] if ids else None
-    except Exception:
-        return None
 
-@app.route("/", methods=["GET"])
-def home():
-    return render_template("index.html")
+# ============================================================
+# DEFAULT / REGISTERED CODE FOR EACH CODE EDITOR
+# ============================================================
 
-@app.route("/agent", methods=["POST"])
-def ai_agent_router():
-    d = request.get_json(silent=True)
-    if not d or ("command" not in d and "text_command" not in d):
-        abort(400)
+REGISTERED_CODES = {
 
-    cmd_raw = d.get("command") or d.get("text_command")
-    cmd = cmd_raw.strip().lower()
+    # --------------------------------------------------------
+    # CODE EDITOR 1
+    # Outer app/__init__.py
+    # --------------------------------------------------------
+    "editor1": r'''from flask import Flask, render_template
+from app.youtube import youtube_bp
 
-    if "youtube" in cmd:
-        q = cmd
-        patterns = [
-            "open youtube and search",
-            "open youtube and play",
-            "open youtube",
-            "and play",
-            "play",
-            "on youtube"
-        ]
-        for p in patterns:
-            q = q.replace(p, "")
-        q = q.strip()
-        vid = get_vid(q)
-        if vid:
-            target = f"https://www.youtube.com/embed/{vid}?autoplay=1&mute=1"
-            msg = f"Playing {q}"
 
-    elif any(k in cmd for k in ["gmail", "email", "mail", "message"]):
-        to, body = "", ""
-        clean_cmd = re.sub(
-            r'^(please\s+)?(open\s+)?(gmail|email|mail|message)\s*',
-            '',
-            cmd
-        ).strip()
+def create_app():
 
-        clean_cmd = re.sub(r'\b(com(and|mand)?)\b', 'com', clean_cmd)
+    app = Flask(__name__)
 
-        parts = re.split(r'\b(type|write|saying|message|content|with body)\b', clean_cmd)
-        recip_part = parts[0].strip()
+    app.register_blueprint(
+        youtube_bp,
+        url_prefix="/youtube"
+    )
 
-        recip_part = re.sub(r'^(update\s+to|to|send\s+to|and\s+update\s+to)\s*', '', recip_part).strip()
+    @app.route("/")
+    def home():
+        return render_template("index.html")
 
-        if len(parts) > 1:
-            body = parts[-1].strip()
+    @app.route("/html")
+    def html():
+        return render_template("index.html")
 
-        if recip_part:
-            c = recip_part.replace(" at ", "@").replace(" dot ", ".").replace(" ", "")
-            c = re.sub(r'[^a-zA-Z0-9@._%-]', '', c)
-            to = c if "@" in c else f"{c}@gmail.com"
+    return app''',
 
-        base = "https://mail.google.com/mail/u/0/?view=cm&fs=1"
-        params = urllib.parse.urlencode({"to": to, "body": body})
-        target = f"{base}&{params}"
-        msg = f"Drafting email to {to}"
+
+    # --------------------------------------------------------
+    # CODE EDITOR 2
+    # app/youtube/__init__.py
+    # --------------------------------------------------------
+    "editor2": r'''from flask import Blueprint, request, jsonify
+
+from app.youtube.player import create_youtube_url
+
+
+youtube_bp = Blueprint(
+    "youtube",
+    __name__
+)
+
+
+@youtube_bp.route(
+    "/play",
+    methods=["POST"]
+)
+def play():
+
+    data = request.get_json(
+        silent=True
+    ) or {}
+
+    command = data.get(
+        "command",
+        ""
+    ).strip()
+
+    if not command:
+
+        return jsonify({
+            "success": False,
+            "message": "Song name is required"
+        }), 400
+
+    url = create_youtube_url(
+        command
+    )
+
+    if not url:
+
+        return jsonify({
+            "success": False,
+            "message": "Could not find the song"
+        }), 404
 
     return jsonify({
         "success": True,
-        "message": msg,
-        "url": target
-    })
+        "type": "youtube",
+        "query": command,
+        "url": url
+    })''',
 
-if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))'''
 
+    # --------------------------------------------------------
+    # CODE EDITOR 3
+    # app/youtube/player.py
+    # --------------------------------------------------------
+    "editor3": r'''import re
+import urllib.parse
+import urllib.request
+
+
+def get_vid(query):
+
+    try:
+        encoded = urllib.parse.quote(query)
+
+        url = (
+            "https://www.youtube.com/results"
+            "?search_query=" + encoded
+        )
+
+        request = urllib.request.Request(
+            url,
+            headers={
+                "User-Agent": "Mozilla/5.0"
+            }
+        )
+
+        data = urllib.request.urlopen(
+            request,
+            timeout=5
+        ).read().decode("utf-8", errors="ignore")
+
+        ids = re.findall(
+            r'"videoId":"([^"]+)"',
+            data
+        )
+
+        return ids[0] if ids else None
+
+    except Exception:
+        return None
+
+
+def create_youtube_url(command):
+
+    text = command.lower().strip()
+
+    patterns = [
+        r"play\s+song\s+(.+)",
+        r"play\s+music\s+(.+)",
+        r"play\s+(.+)",
+        r"youtube\s+(.+)"
+    ]
+
+    query = command
+
+    for pattern in patterns:
+
+        match = re.search(
+            pattern,
+            text
+        )
+
+        if match:
+
+            query = match.group(1)
+            break
+
+    query = query.strip()
+
+    video_id = get_vid(query)
+
+    if not video_id:
+        return None
+
+    return (
+        "https://www.youtube.com/embed/"
+        + video_id
+        + "?autoplay=1&mute=0"
+    )''',
+
+
+    # --------------------------------------------------------
+    # CODE EDITOR 4
+    # wsgi.py
+    # --------------------------------------------------------
+    "editor4": r'''from app import create_app
+
+app = create_app()''',
+
+
+    # --------------------------------------------------------
+    # CODE EDITOR 5
+    # templates/index.html
+    # --------------------------------------------------------
+    "editor5": r'''<!DOCTYPE html>
+<html>
+
+<head>
+    <title>Nova AI</title>
+</head>
+
+<body>
+
+    <h1>🤖 Nova AI</h1>
+
+    <h2>✅ Backend Connected Successfully</h2>
+
+    <p>Flask server is running.</p>
+
+</body>
+
+</html>'''
+}
+
+
+# ============================================================
+# HELPER FUNCTIONS
+# ============================================================
 
 def get_char_diffs(expected: str, found: str):
-    """Finds exact character position differences between expected and found strings."""
+    """
+    Finds exact character differences between
+    expected and submitted strings.
+    """
+
     diffs = []
-    matcher = difflib.SequenceMatcher(None, expected, found)
+
+    matcher = difflib.SequenceMatcher(
+        None,
+        expected,
+        found
+    )
+
     for tag, i1, i2, j1, j2 in matcher.get_opcodes():
-        if tag == 'replace':
-            diffs.append(f"Expected '{expected[i1:i2]}', found '{found[j1:j2]}' at character index {j1}")
-        elif tag == 'delete':
-            diffs.append(f"Missing character(s) '{expected[i1:i2]}' near index {j1}")
-        elif tag == 'insert':
-            diffs.append(f"Extra character(s) '{found[j1:j2]}' at index {j1}")
+
+        if tag == "replace":
+
+            diffs.append(
+                f"Expected '{expected[i1:i2]}', "
+                f"found '{found[j1:j2]}' "
+                f"at character index {j1}"
+            )
+
+        elif tag == "delete":
+
+            diffs.append(
+                f"Missing character(s) "
+                f"'{expected[i1:i2]}' "
+                f"near index {j1}"
+            )
+
+        elif tag == "insert":
+
+            diffs.append(
+                f"Extra character(s) "
+                f"'{found[j1:j2]}' "
+                f"at index {j1}"
+            )
+
     return diffs
 
 
-def strip_all_whitespace(text: str) -> str:
-    """Removes all space and tab characters to ignore inner spacing completely."""
-    return re.sub(r'[ \t]+', '', text)
+def strip_all_whitespace(text: str):
+    """
+    Removes spaces and tabs so inner spacing
+    can be ignored during comparison.
+    """
+
+    return re.sub(
+        r"[ \t]+",
+        "",
+        text
+    )
 
 
-def analyze_differences(registered: str, submitted: str):
-    reg_lines = registered.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
-    sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
+# ============================================================
+# CODE COMPARISON
+# ============================================================
+
+def analyze_differences(
+    registered: str,
+    submitted: str
+):
+
+    reg_lines = (
+        registered
+        .replace("\xa0", " ")
+        .replace("\r\n", "\n")
+        .splitlines()
+    )
+
+    sub_lines = (
+        submitted
+        .replace("\xa0", " ")
+        .replace("\r\n", "\n")
+        .splitlines()
+    )
 
     if not any(sub_lines):
-        return {"match": False, "errors": [{"type": "empty", "message": "Submitted code is empty."}]}
+
+        return {
+            "match": False,
+            "errors": [
+                {
+                    "type": "empty",
+                    "message": "Submitted code is empty."
+                }
+            ]
+        }
 
     errors = []
 
-    for line_idx in range(1, len(sub_lines) + 1):
+    for line_idx in range(
+        1,
+        len(sub_lines) + 1
+    ):
+
         if line_idx > len(reg_lines):
+
             errors.append({
                 "line_no": line_idx,
                 "type": "extra_line",
-                "message": f"Line {line_idx} is an extra line not present in registered code.",
+                "message": (
+                    f"Line {line_idx} is an extra line "
+                    "not present in registered code."
+                ),
                 "found": sub_lines[line_idx - 1]
             })
+
             continue
 
-        expected_line = reg_lines[line_idx - 1]
-        sub_line = sub_lines[line_idx - 1]
+        expected_line = reg_lines[
+            line_idx - 1
+        ]
 
-        expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
-        found_indent = len(sub_line) - len(sub_line.lstrip(' '))
+        sub_line = sub_lines[
+            line_idx - 1
+        ]
 
-        expected_content = strip_all_whitespace(expected_line)
-        found_content = strip_all_whitespace(sub_line)
+        expected_indent = (
+            len(expected_line)
+            - len(expected_line.lstrip(" "))
+        )
 
-        if expected_indent == found_indent and expected_content == found_content:
+        found_indent = (
+            len(sub_line)
+            - len(sub_line.lstrip(" "))
+        )
+
+        expected_content = strip_all_whitespace(
+            expected_line
+        )
+
+        found_content = strip_all_whitespace(
+            sub_line
+        )
+
+        if (
+            expected_indent == found_indent
+            and expected_content == found_content
+        ):
             continue
 
         line_error = {
@@ -150,11 +369,29 @@ def analyze_differences(registered: str, submitted: str):
         }
 
         if expected_indent != found_indent:
-            diff_spaces = expected_indent - found_indent
+
+            diff_spaces = (
+                expected_indent
+                - found_indent
+            )
+
             if diff_spaces > 0:
-                indent_msg = f"Needs {diff_spaces} more leading space(s) (Expected {expected_indent}, found {found_indent})."
+
+                indent_msg = (
+                    f"Needs {diff_spaces} more "
+                    "leading space(s) "
+                    f"(Expected {expected_indent}, "
+                    f"found {found_indent})."
+                )
+
             else:
-                indent_msg = f"Has {abs(diff_spaces)} extra leading space(s) (Expected {expected_indent}, found {found_indent})."
+
+                indent_msg = (
+                    f"Has {abs(diff_spaces)} extra "
+                    "leading space(s) "
+                    f"(Expected {expected_indent}, "
+                    f"found {found_indent})."
+                )
 
             line_error["indentation"] = {
                 "expected_spaces": expected_indent,
@@ -163,84 +400,266 @@ def analyze_differences(registered: str, submitted: str):
             }
 
         if expected_content != found_content:
-            line_error["character_mismatches"] = get_char_diffs(expected_content, found_content)
 
-        if line_error["indentation"] or line_error["character_mismatches"]:
+            line_error["character_mismatches"] = (
+                get_char_diffs(
+                    expected_content,
+                    found_content
+                )
+            )
+
+        if (
+            line_error["indentation"]
+            or line_error["character_mismatches"]
+        ):
+
             errors.append(line_error)
 
-    return {"match": len(errors) == 0, "errors": errors}
-
-
-def fix_indentation_only(registered: str, submitted: str):
-    """
-    Fix indentation only when the submitted lines contain the same
-    non-whitespace content as the registered/default code.
-
-    No characters inside the actual code are changed.
-    Lines that cannot be safely matched are left untouched.
-    """
-    reg_lines = registered.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
-    sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
-
-    fixed_lines = []
-    changed_lines = []
-
-    for idx, sub_line in enumerate(sub_lines):
-        if idx < len(reg_lines):
-            expected_line = reg_lines[idx]
-
-            # Compare content while ignoring indentation and inner whitespace,
-            # exactly in the spirit of the existing analyzer.
-            expected_content = strip_all_whitespace(expected_line)
-            submitted_content = strip_all_whitespace(sub_line)
-
-            if expected_content == submitted_content:
-                expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
-                current_indent = len(sub_line) - len(sub_line.lstrip(' '))
-
-                if expected_indent != current_indent:
-                    fixed_lines.append(' ' * expected_indent + sub_line.lstrip(' '))
-                    changed_lines.append(idx + 1)
-                else:
-                    fixed_lines.append(sub_line)
-                continue
-
-        # Do not touch lines that cannot be safely matched.
-        fixed_lines.append(sub_line)
-
     return {
-        "success": True,
-        "fixed_code": "\n".join(fixed_lines),
-        "changed_lines": changed_lines,
-        "changed_count": len(changed_lines)
+        "match": len(errors) == 0,
+        "errors": errors
     }
 
 
-@app.route("/", methods=["GET"])
+# ============================================================
+# FULL CODE FIX
+# ============================================================
+
+def fix_full_code(editor_id):
+
+    """
+    Completely replaces the selected editor's code
+    with its registered/default code.
+    """
+
+    if editor_id not in REGISTERED_CODES:
+
+        return {
+            "success": False,
+            "message": "Invalid editor ID.",
+            "fixed_code": ""
+        }
+
+    fixed_code = REGISTERED_CODES[
+        editor_id
+    ]
+
+    return {
+        "success": True,
+        "editor_id": editor_id,
+        "fixed_code": fixed_code,
+        "changed_count": 1,
+        "message": (
+            f"{editor_id} has been restored "
+            "to the default code."
+        )
+    }
+
+
+# ============================================================
+# HOME PAGE
+# ============================================================
+
+@app.route(
+    "/",
+    methods=["GET"]
+)
 def home():
-    return render_template("index.html")
+
+    return render_template(
+        "index.html"
+    )
 
 
-@app.route("/compare", methods=["POST"])
+# ============================================================
+# COMPARE
+# ============================================================
+
+@app.route(
+    "/compare",
+    methods=["POST"]
+)
 def compare():
-    data = request.get_json(silent=True) or {}
-    result = analyze_differences(REGISTERED_CODE, data.get("input_code", ""))
+
+    data = (
+        request.get_json(
+            silent=True
+        )
+        or {}
+    )
+
+    editor_id = data.get(
+        "editor_id"
+    )
+
+    input_code = data.get(
+        "input_code",
+        ""
+    )
+
+    if editor_id not in REGISTERED_CODES:
+
+        return jsonify({
+            "match": False,
+            "errors": [
+                {
+                    "type": "invalid_editor",
+                    "message": "Invalid editor ID."
+                }
+            ]
+        }), 400
+
+    result = analyze_differences(
+        REGISTERED_CODES[editor_id],
+        input_code
+    )
+
+    result["editor_id"] = editor_id
+
     return jsonify(result)
 
 
-@app.route("/fix-indentation", methods=["POST"])
+# ============================================================
+# FIX
+# ============================================================
+
+@app.route(
+    "/fix",
+    methods=["POST"]
+)
+def fix():
+
+    data = (
+        request.get_json(
+            silent=True
+        )
+        or {}
+    )
+
+    editor_id = data.get(
+        "editor_id"
+    )
+
+    if editor_id not in REGISTERED_CODES:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid editor ID."
+        }), 400
+
+    result = fix_full_code(
+        editor_id
+    )
+
+    return jsonify(result)
+
+
+# ============================================================
+# OLD FIX-INDENTATION ROUTE
+# ============================================================
+
+@app.route(
+    "/fix-indentation",
+    methods=["POST"]
+)
 def fix_indentation():
-    data = request.get_json(silent=True) or {}
-    result = fix_indentation_only(REGISTERED_CODE, data.get("input_code", ""))
+
+    data = (
+        request.get_json(
+            silent=True
+        )
+        or {}
+    )
+
+    editor_id = data.get(
+        "editor_id"
+    )
+
+    if editor_id not in REGISTERED_CODES:
+
+        return jsonify({
+            "success": False,
+            "message": "Invalid editor ID."
+        }), 400
+
+    # The new system intentionally performs
+    # a complete replacement instead of
+    # an indentation-only correction.
+
+    result = fix_full_code(
+        editor_id
+    )
+
     return jsonify(result)
 
 
-@app.route("/template", methods=["GET"])
-def get_template():
-    """Returns the clean registered code template."""
-    clean_code = REGISTERED_CODE.replace('\xa0', ' ')
-    return jsonify({"template_code": clean_code})
+# ============================================================
+# GET TEMPLATE
+# ============================================================
 
+@app.route(
+    "/template",
+    methods=["GET"]
+)
+def get_template():
+
+    editor_id = request.args.get(
+        "editor_id"
+    )
+
+    if editor_id:
+
+        if editor_id not in REGISTERED_CODES:
+
+            return jsonify({
+                "success": False,
+                "message": "Invalid editor ID."
+            }), 400
+
+        return jsonify({
+            "success": True,
+            "editor_id": editor_id,
+            "template_code": REGISTERED_CODES[
+                editor_id
+            ]
+        })
+
+    # Return all five templates
+    return jsonify({
+        "success": True,
+        "templates": REGISTERED_CODES
+    })
+
+
+# ============================================================
+# GET ALL REGISTERED CODES
+# ============================================================
+
+@app.route(
+    "/registered-codes",
+    methods=["GET"]
+)
+def registered_codes():
+
+    return jsonify({
+        "success": True,
+        "codes": REGISTERED_CODES
+    })
+
+
+# ============================================================
+# RUN SERVER
+# ============================================================
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 8000)))
+
+    app.run(
+        host="0.0.0.0",
+        port=int(
+            __import__("os").environ.get(
+                "PORT",
+                8000
+            )
+        )
+    )
+```
