@@ -119,10 +119,7 @@ def analyze_differences(registered: str, submitted: str):
 
     errors = []
 
-    # Iterate ONLY up to the number of lines typed by the user
     for line_idx in range(1, len(sub_lines) + 1):
-
-        # If user types more lines than the registered code, flag extra lines
         if line_idx > len(reg_lines):
             errors.append({
                 "line_no": line_idx,
@@ -135,15 +132,12 @@ def analyze_differences(registered: str, submitted: str):
         expected_line = reg_lines[line_idx - 1]
         sub_line = sub_lines[line_idx - 1]
 
-        # Calculate exact leading indentation spaces before stripping content
         expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
         found_indent = len(sub_line) - len(sub_line.lstrip(' '))
 
-        # Strip all inner spaces so spacing around commas/operators is ignored
         expected_content = strip_all_whitespace(expected_line)
         found_content = strip_all_whitespace(sub_line)
 
-        # Skip if indentation matches and non-whitespace characters match perfectly
         if expected_indent == found_indent and expected_content == found_content:
             continue
 
@@ -155,7 +149,6 @@ def analyze_differences(registered: str, submitted: str):
             "found_line": sub_line
         }
 
-        # 1. Indentation Check
         if expected_indent != found_indent:
             diff_spaces = expected_indent - found_indent
             if diff_spaces > 0:
@@ -169,15 +162,58 @@ def analyze_differences(registered: str, submitted: str):
                 "message": indent_msg
             }
 
-        # 2. Character Mismatch Check (calculated on content with zero inner spaces)
         if expected_content != found_content:
             line_error["character_mismatches"] = get_char_diffs(expected_content, found_content)
 
-        # Only add to errors list if an actual indentation or character issue was found
         if line_error["indentation"] or line_error["character_mismatches"]:
             errors.append(line_error)
 
     return {"match": len(errors) == 0, "errors": errors}
+
+
+def fix_indentation_only(registered: str, submitted: str):
+    """
+    Fix indentation only when the submitted lines contain the same
+    non-whitespace content as the registered/default code.
+
+    No characters inside the actual code are changed.
+    Lines that cannot be safely matched are left untouched.
+    """
+    reg_lines = registered.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
+    sub_lines = submitted.replace('\xa0', ' ').replace('\r\n', '\n').splitlines()
+
+    fixed_lines = []
+    changed_lines = []
+
+    for idx, sub_line in enumerate(sub_lines):
+        if idx < len(reg_lines):
+            expected_line = reg_lines[idx]
+
+            # Compare content while ignoring indentation and inner whitespace,
+            # exactly in the spirit of the existing analyzer.
+            expected_content = strip_all_whitespace(expected_line)
+            submitted_content = strip_all_whitespace(sub_line)
+
+            if expected_content == submitted_content:
+                expected_indent = len(expected_line) - len(expected_line.lstrip(' '))
+                current_indent = len(sub_line) - len(sub_line.lstrip(' '))
+
+                if expected_indent != current_indent:
+                    fixed_lines.append(' ' * expected_indent + sub_line.lstrip(' '))
+                    changed_lines.append(idx + 1)
+                else:
+                    fixed_lines.append(sub_line)
+                continue
+
+        # Do not touch lines that cannot be safely matched.
+        fixed_lines.append(sub_line)
+
+    return {
+        "success": True,
+        "fixed_code": "\n".join(fixed_lines),
+        "changed_lines": changed_lines,
+        "changed_count": len(changed_lines)
+    }
 
 
 @app.route("/", methods=["GET"])
@@ -190,6 +226,20 @@ def compare():
     data = request.get_json(silent=True) or {}
     result = analyze_differences(REGISTERED_CODE, data.get("input_code", ""))
     return jsonify(result)
+
+
+@app.route("/fix-indentation", methods=["POST"])
+def fix_indentation():
+    data = request.get_json(silent=True) or {}
+    result = fix_indentation_only(REGISTERED_CODE, data.get("input_code", ""))
+    return jsonify(result)
+
+
+@app.route("/template", methods=["GET"])
+def get_template():
+    """Returns the clean registered code template."""
+    clean_code = REGISTERED_CODE.replace('\xa0', ' ')
+    return jsonify({"template_code": clean_code})
 
 
 if __name__ == "__main__":
