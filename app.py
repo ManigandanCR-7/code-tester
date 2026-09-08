@@ -1,4 +1,3 @@
-```python
 import re
 import difflib
 from flask import Flask, render_template, request, jsonify
@@ -662,4 +661,3 @@ if __name__ == "__main__":
             )
         )
     )
-```
